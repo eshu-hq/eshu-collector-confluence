@@ -82,6 +82,27 @@ record each with `eshu component grant dev.eshu.collector.confluence --version
 0.1.0 --kind <kind> --schema-version <v> --scope documentation --expires-in
 <duration>`.
 
+## Image and seeding
+
+`Dockerfile` builds one static, pure-Go binary onto a shell-less distroless
+base (`ghcr.io/eshu-hq/eshu-collector-confluence`, runs as 65532). The image is
+also the seed source for the component home:
+
+```bash
+collector seed --dest /component [--image-ref ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest>]
+```
+
+`seed` writes `DEST/collector` (mode 0755) and `DEST/manifest.yaml`. It leaves a
+file alone when its bytes and mode already match, so an init container can run
+it on every start, and it replaces a changed binary atomically. The manifest in
+the repository keeps a placeholder artifact digest, because an image cannot name
+its own digest. Pass the digest-pinned reference the pod runs (`--image-ref`, or
+`COLLECTOR_IMAGE_REF`) and the seeded manifest names it. `scripts/pin-digest.sh`
+resolves a pushed tag to that reference. Installing the seeded manifest still
+needs the four grants and the `eshu-hq` publisher on the allowlist; `eshu
+component enable` is not idempotent, so an init container must tolerate "already
+enabled".
+
 ## Known gaps
 
 - `eshu component inspect`, `verify`, and `conform`, and the public SDK

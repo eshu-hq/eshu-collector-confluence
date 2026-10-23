@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the collector conformance gate: build, vet, full tests.
+# Runs the collector's CI gate locally: build, vet, race tests.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 go build ./...

@@ -1,0 +1,5 @@
+.git
+.github
+testdata/golden
+*.test
+collector

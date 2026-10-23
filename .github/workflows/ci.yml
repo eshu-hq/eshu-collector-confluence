@@ -37,9 +37,22 @@ jobs:
           go-version: "1.26.5"
       - run: go test -count=1 -run TestImportBoundaryRejectsCoreAndCrossCollectorImports .
 
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t eshu-collector-confluence:ci .
+      - name: Seed smoke test
+        run: |
+          mkdir -p "$RUNNER_TEMP/component"
+          chmod 777 "$RUNNER_TEMP/component"
+          docker run --rm -v "$RUNNER_TEMP/component:/component" eshu-collector-confluence:ci seed --dest /component
+          test -x "$RUNNER_TEMP/component/collector"
+          test -f "$RUNNER_TEMP/component/manifest.yaml"
+
   ci-complete:
     if: always()
-    needs: [vet, test, boundary]
+    needs: [vet, test, boundary, image]
     runs-on: ubuntu-latest
     steps:
       - name: Require every job to succeed

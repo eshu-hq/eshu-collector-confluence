@@ -4,6 +4,11 @@
 // Command collector serves one Eshu collector SDK claim for Confluence.
 //
 //	collector --sdk-stdio     read one Request from stdin, write one Result
+//	collector seed --dest DIR copy this binary and its manifest into DIR
+//
+// The seed subcommand exists so a digest-pinned image with no shell can
+// populate a component home: an init container runs it, and the Eshu CLI then
+// installs, enables, and grants the component.
 package main
 
 import (
@@ -34,6 +39,9 @@ func run(
 	stderr io.Writer,
 	getenv func(string) string,
 ) error {
+	if len(args) > 0 && args[0] == "seed" {
+		return runSeed(args[1:], stdout, getenv)
+	}
 	flags := flag.NewFlagSet("collector", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	sdkStdio := flags.Bool("sdk-stdio", false, "read one collector SDK host request from stdin and write one result to stdout")
@@ -41,7 +49,7 @@ func run(
 		return err
 	}
 	if !*sdkStdio {
-		return errors.New("usage: collector --sdk-stdio")
+		return errors.New("usage: collector --sdk-stdio | collector seed --dest DIR")
 	}
 	return runStdio(ctx, stdin, stdout, stderr, getenv)
 }
