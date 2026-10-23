@@ -228,16 +228,8 @@ func TestRunSeedRejectsBadInvocations(t *testing.T) {
 // TestSeededBinaryServesAClaim builds the real binary, seeds it, and runs the
 // seeded copy against a request: the seeded file is a working collector.
 func TestSeededBinaryServesAClaim(t *testing.T) {
-	if testing.Short() {
-		t.Skip("builds the binary")
-	}
+	built := builtBinary(t)
 	work := t.TempDir()
-	built := filepath.Join(work, "built-collector")
-	build := exec.CommandContext(t.Context(), "go", "build", "-trimpath", "-o", built, ".")
-	build.Env = append(os.Environ(), "CGO_ENABLED=0")
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("go build error = %v\n%s", err, out)
-	}
 	dest := filepath.Join(work, "component-home")
 	seed := exec.CommandContext(t.Context(), built, "seed", "--dest", dest, "--image-ref", pinnedRef)
 	if out, err := seed.CombinedOutput(); err != nil {

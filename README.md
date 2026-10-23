@@ -141,7 +141,9 @@ the repository keeps a placeholder artifact digest, because an image cannot name
 its own digest. Pass the digest-pinned reference the pod runs (`--image-ref`, or
 `COLLECTOR_IMAGE_REF`) and the seeded manifest names it; `seed` stamps only that
 reference into `artifacts[].image` and refuses anything that is not a
-`name[:port]/path@sha256:<64 hex>` reference. There is no release job or digest
+`name[:port]/path@sha256:<64 hex>` reference (lower-case, no tag, no quote,
+backslash, `$`, or whitespace; one trailing newline is ignored). A refused
+reference exits non-zero and writes nothing. There is no release job or digest
 script in this repository yet: whoever publishes the image reads its digest from
 the registry. The image is always `linux/amd64` (the manifest's platform),
 whatever the builder is. Installing the seeded manifest still

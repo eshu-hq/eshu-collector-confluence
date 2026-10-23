@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -89,18 +88,7 @@ func errText(err error) string {
 func TestBuiltBinaryNeverPrintsTheCredential(t *testing.T) {
 	t.Parallel()
 
-	if testing.Short() {
-		t.Skip("builds the binary")
-	}
-	goTool, err := exec.LookPath("go")
-	if err != nil {
-		t.Skip("go tool is not on PATH")
-	}
-	binary := filepath.Join(t.TempDir(), "collector")
-	build := exec.CommandContext(t.Context(), goTool, "build", "-o", binary, ".")
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("go build error = %v\n%s", err, out)
-	}
+	binary := builtBinary(t)
 	provider := echoingProvider(t, http.StatusInternalServerError)
 
 	tests := map[string]struct {

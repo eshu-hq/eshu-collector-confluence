@@ -25,7 +25,13 @@ const (
 )
 
 var (
-	digestPinnedRef  = regexp.MustCompile(`^[a-z0-9][a-z0-9./_-]*(:[A-Za-z0-9._-]+)?@sha256:[a-f0-9]{64}$`)
+	// digestPinnedRef is the only image reference seed accepts: a lower-case
+	// registry host (optionally with a port) and repository path, then a full
+	// sha256 digest. It admits no quote, backslash, dollar sign, whitespace,
+	// newline, or tag, so the value is safe to write into the manifest as a
+	// plain YAML scalar.
+	digestPinnedRef = regexp.MustCompile(
+		`^[a-z0-9]+([._-][a-z0-9]+)*(:[0-9]+)?(/[a-z0-9]+([._-][a-z0-9]+)*)*@sha256:[0-9a-f]{64}$`)
 	manifestImageRow = regexp.MustCompile(`(?m)^([ \t]+image:[ \t]+)\S+[ \t]*$`)
 )
 
@@ -47,7 +53,7 @@ func runSeed(args []string, stdout io.Writer, getenv func(string) string) error 
 	flags := flag.NewFlagSet("collector seed", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	dest := flags.String("dest", "", "directory to write the collector binary and manifest.yaml into")
-	imageRef := flags.String("image-ref", strings.TrimSpace(getenv(envImageRef)), "digest-pinned image reference to record in the manifest artifact")
+	imageRef := flags.String("image-ref", getenv(envImageRef), "digest-pinned image reference to record in the manifest artifact")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("seed: %w", err)
 	}
@@ -58,7 +64,10 @@ func runSeed(args []string, stdout io.Writer, getenv func(string) string) error 
 		return errors.New("seed: --dest is required")
 	}
 	manifest := confluence.ManifestYAML
-	if ref := strings.TrimSpace(*imageRef); ref != "" {
+	// One trailing newline is tolerated, so a reference read from a file or
+	// command output works. Anything else, including other whitespace, is
+	// validated as part of the reference and refused if it does not belong.
+	if ref := strings.TrimSuffix(*imageRef, "\n"); ref != "" {
 		var err error
 		if manifest, err = pinManifestImage(manifest, ref); err != nil {
 			return err
@@ -76,13 +85,35 @@ func runSeed(args []string, stdout io.Writer, getenv func(string) string) error 
 	return nil
 }
 
-// pinManifestImage rewrites every artifact image row of the manifest to ref,
-// which must be digest-pinned.
+// pinManifestImage rewrites the image of every manifest artifact to ref, which
+// must be a digest-pinned reference. The replacement is literal: ref is never
+// interpreted as a regexp template, so no character in it can expand a group.
+// Only the value after "image:" changes; every other byte of the manifest is
+// preserved. A manifest with no artifact image row is an error, not a silent
+// no-op.
 func pinManifestImage(manifest []byte, ref string) ([]byte, error) {
 	if !digestPinnedRef.MatchString(ref) {
-		return nil, errors.New("seed: --image-ref must be a digest-pinned reference (name@sha256:<64 hex>)")
+		return nil, errors.New("seed: --image-ref must be a digest-pinned reference (name[:port]/path@sha256:<64 hex>)")
 	}
-	return manifestImageRow.ReplaceAll(manifest, []byte("${1}"+ref)), nil
+	pinned, rows := stampImageRows(manifest, ref)
+	if rows == 0 {
+		return nil, errors.New("seed: the manifest has no artifact image row to pin")
+	}
+	return pinned, nil
+}
+
+// stampImageRows writes value after every "image:" row key and returns the new
+// manifest and the number of rows it changed. The replacement is a literal byte
+// copy, never a regexp template, so $1, ${1}, & and backslashes in value stay
+// as written.
+func stampImageRows(manifest []byte, value string) ([]byte, int) {
+	rows := 0
+	stamped := manifestImageRow.ReplaceAllFunc(manifest, func(row []byte) []byte {
+		rows++
+		prefix := manifestImageRow.FindSubmatch(row)[1]
+		return append(append(make([]byte, 0, len(prefix)+len(value)), prefix...), value...)
+	})
+	return stamped, rows
 }
 
 // seedInto writes the binary at source and the manifest into dest and reports
