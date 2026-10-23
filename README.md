@@ -69,6 +69,17 @@ typo cannot silently drop a bound.
   attestation. `true` is **refused**: the claim ends terminal with failure class
   `unsupported_option`, before any provider request, because the published
   collector SDK cannot carry the attestation (see Known gaps).
+- The claim time budget is `limits.claim_timeout_seconds` (default 300) or the
+  time the host gives the claim, whichever is smaller. The host sets the claim
+  deadline to the **initial lease expiry** and kills the process there; the
+  default lease TTL is 60 seconds (worker env
+  `ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL`) and heartbeats do not extend the
+  deadline. So a `claim_timeout_seconds` above the lease TTL has no effect. The
+  collector stops starting work a margin before the deadline (5% of the time
+  left, at most 2 seconds) and returns a `retryable` result with failure class
+  `claim-deadline-exceeded` instead of being killed mid-write. Set the worker
+  lease TTL to at least the in-tree value (5 minutes) for any activation whose
+  space takes longer than about a minute to read; see the acceptance notes.
 - The host reads at most `process.stdout_limit_bytes` of stdout per claim
   (4 MiB by default). Raise it for a large space and keep
   `limits.max_result_bytes` below it; pages that do not fit are left out whole
@@ -104,6 +115,22 @@ resolves a pushed tag to that reference. Installing the seeded manifest still
 needs the four grants and the `eshu-hq` publisher on the allowlist; `eshu
 component enable` is not idempotent, so an init container must tolerate "already
 enabled".
+
+## Cutover acceptance notes
+
+Check these on the QA activation before the in-tree collector is removed:
+
+- **Space read time vs lease TTL.** Measure how long the largest QA space takes
+  to read (the status row's `source_latency_ms`). It must fit inside the worker
+  lease TTL minus the deadline margin. A read that does not fit retries with
+  `claim-deadline-exceeded` until the host's attempt budget is spent, then
+  dead-letters. Raise `ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL` on the worker
+  to at least 5 minutes (the in-tree value) before activating.
+- **Live Confluence Cloud check.** The page URL join (see
+  [testdata/README.md](testdata/README.md)) is inferred from documentation, not
+  confirmed on a live tenant.
+- **Scope id.** `host.scope.id` must equal the in-tree id so read truth
+  continues.
 
 ## Known gaps
 

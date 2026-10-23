@@ -47,6 +47,13 @@ config:
     # carries Generation.TrustedDeletion (README, Known gaps). Leave it false.
     allow_empty_successor: false
   limits:
+    # Upper bound for one claim. The host kills the process at the claim's
+    # initial lease expiry (default lease TTL 60 s; worker env
+    # ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL; heartbeats do not extend it), so
+    # the real bound is the smaller of this and the lease. The collector stops
+    # 5% (at most 2 s) before the lease expiry and returns a retryable
+    # claim-deadline-exceeded result. For a space that takes over a minute to
+    # read, set the worker lease TTL to at least 5m (the in-tree value).
     claim_timeout_seconds: 300
     fetch_concurrency: 4        # concurrent page-detail reads, 1..16
     max_page_bytes: 1048576     # a larger page is skipped and the snapshot is partial

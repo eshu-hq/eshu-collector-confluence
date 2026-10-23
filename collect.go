@@ -52,17 +52,19 @@ func (c *Collector) Collect(ctx context.Context, claim sdk.Claim) sdk.Result {
 		clock = time.Now
 	}
 	startedAt := clock().UTC()
-	if !claim.Deadline.IsZero() && startedAt.After(claim.Deadline) {
-		return terminalResult(claim, startedAt, FailureDeadline)
-	}
 	if claim.CollectorKind != CollectorKind || claim.ComponentID != ComponentID {
 		return terminalResult(claim, startedAt, FailureInvalidClaim)
 	}
 
+	// The host sets claim.Deadline to the initial lease expiry and kills this
+	// process there; heartbeats do not extend it. Stop a margin before it so
+	// the collector can return its own retryable result instead of dying
+	// mid-write, and never run longer than the configured claim timeout.
 	timeout := c.Config.ClaimTimeout
 	if !claim.Deadline.IsZero() {
-		if remaining := claim.Deadline.Sub(startedAt); remaining < timeout {
-			timeout = remaining
+		timeout = claimBudget(timeout, claim.Deadline.Sub(startedAt))
+		if timeout <= 0 {
+			return retryableResult(claim, startedAt, FailureDeadline, deadlineRetryAfter)
 		}
 	}
 	runCtx, cancel := context.WithTimeout(ctx, timeout)

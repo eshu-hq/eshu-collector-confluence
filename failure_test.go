@@ -204,16 +204,17 @@ func TestCollectLowestIndexFailureWinsAmongConcurrentFetches(t *testing.T) {
 	}
 }
 
-func TestCollectDeadlineAlreadyPassedIsTerminal(t *testing.T) {
+func TestCollectDeadlineAlreadyPassedIsRetryable(t *testing.T) {
 	t.Parallel()
 
 	site := twoPageSite(t)
 	claim := testClaim()
 	claim.Deadline = testNow().Add(-time.Second)
 	outcome := collectOnce(t, site, testConfig(site), claim)
-	if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome) != FailureDeadline {
-		t.Fatalf("state %q class %q, want terminal claim-deadline-exceeded", outcome.State, failureClassOf(t, outcome))
+	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome) != FailureDeadline {
+		t.Fatalf("state %q class %q, want retryable claim-deadline-exceeded", outcome.State, failureClassOf(t, outcome))
 	}
+	assertHostAccepts(t, outcome)
 	if len(site.recorded()) != 0 {
 		t.Error("an expired claim must not touch the provider")
 	}
