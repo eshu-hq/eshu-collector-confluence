@@ -64,7 +64,7 @@ func runStdio(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.
 	if handled.Detail != "" {
 		fmt.Fprintf(stderr, "collector detail: %s\n", handled.Detail)
 	}
-	encoder := json.NewEncoder(stdout)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(handled.Outcome)
+	// Compact output: the host caps stdout, and the result byte budget is
+	// measured on the compact encoding.
+	return json.NewEncoder(stdout).Encode(handled.Outcome)
 }

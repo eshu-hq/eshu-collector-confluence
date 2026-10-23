@@ -1,0 +1,73 @@
+{
+  "protocol_version": "collector-sdk/v1alpha1",
+  "state": "complete",
+  "claim": {
+    "component_id": "dev.eshu.collector.confluence",
+    "instance_id": "confluence-eng",
+    "collector_kind": "documentation",
+    "source_system": "confluence",
+    "scope": {
+      "id": "doc-source:confluence:confluence.example.invalid:12345",
+      "kind": "documentation_source"
+    },
+    "source_run_id": "component-generation:abc",
+    "generation_id": "component-generation:abc",
+    "work_item_id": "component-work:abc",
+    "fencing_token": "7",
+    "attempt": 1,
+    "deadline": "2026-10-01T13:00:00Z",
+    "config_handle": "component-config:confluence"
+  },
+  "generation": {
+    "id": "component-generation:abc",
+    "observed_at": "2026-10-01T12:00:00Z",
+    "freshness_hint": "sha256:af2bc7469d0e4dec6f450106f048e7625dcf9475fa1952702fcd1a62f8b3eaff"
+  },
+  "facts": [
+    {
+      "kind": "documentation_source",
+      "schema_version": "1.0.0",
+      "stable_key": "479bc25b9f7b65aa087d95cecd091ffeebff5bc2c40f16bd8d830ca815684e73",
+      "source_confidence": "observed",
+      "observed_at": "2026-10-01T12:00:00Z",
+      "source_ref": {
+        "source_system": "confluence",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "generation_id": "component-generation:abc",
+        "fact_key": "479bc25b9f7b65aa087d95cecd091ffeebff5bc2c40f16bd8d830ca815684e73",
+        "uri": "https://confluence.example.invalid/wiki",
+        "record_id": "12345"
+      },
+      "payload": {
+        "acl_summary": {
+          "is_partial": true,
+          "partial_reason": "confluence_source_restrictions_not_collected",
+          "source_acl_state": "partial",
+          "visibility": "credential_viewable"
+        },
+        "base_uri": "https://confluence.example.invalid/wiki",
+        "display_name": "Engineering Handbook",
+        "external_id": "12345",
+        "labels": [
+          "ENG"
+        ],
+        "source_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_metadata": {
+          "coverage_warning": "complete",
+          "failure_count": "0",
+          "max_total_pages": "5000",
+          "page_count": "0",
+          "sync_status": "complete"
+        },
+        "source_system": "confluence",
+        "source_type": "confluence_space"
+      }
+    }
+  ],
+  "statuses": [
+    {
+      "class": "complete",
+      "fact_count": 1
+    }
+  ]
+}

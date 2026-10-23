@@ -44,6 +44,6 @@ spec:
   consumerContracts:
     reducer:
       phases:
-        - documentation_materialization
+        - source_evidence_only:no_graph_truth
   telemetry:
     metricsPrefix: eshu_dp_confluence_collector_

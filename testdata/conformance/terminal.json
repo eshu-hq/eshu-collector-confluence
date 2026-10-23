@@ -1,0 +1,31 @@
+{
+  "protocol_version": "collector-sdk/v1alpha1",
+  "state": "terminal",
+  "claim": {
+    "component_id": "dev.eshu.collector.confluence",
+    "instance_id": "confluence-eng",
+    "collector_kind": "documentation",
+    "source_system": "confluence",
+    "scope": {
+      "id": "doc-source:confluence:confluence.example.invalid:12345",
+      "kind": "documentation_source"
+    },
+    "source_run_id": "component-generation:abc",
+    "generation_id": "component-generation:abc",
+    "work_item_id": "component-work:abc",
+    "fencing_token": "7",
+    "attempt": 1,
+    "deadline": "2026-10-01T13:00:00Z",
+    "config_handle": "component-config:confluence"
+  },
+  "generation": {
+    "id": "component-generation:abc",
+    "observed_at": "2026-10-01T12:00:00Z"
+  },
+  "statuses": [
+    {
+      "class": "failure",
+      "failure_class": "auth-failed"
+    }
+  ]
+}

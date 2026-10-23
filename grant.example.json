@@ -1,1 +1,6 @@
-{"expires_at":"2027-09-01T00:00:00Z","kind":"aws_resource","producer_id":"dev.eshu.collector.confluence","revoked":false,"schema_versions":["1.0.0"],"scope":"component:confluence-primary","version":"0.1.0"}
+[
+  {"producer_id":"dev.eshu.collector.confluence","version":"0.1.0","kind":"documentation_source","schema_versions":["1.0.0"],"scope":"documentation","expires_at":"2027-09-01T00:00:00Z","revoked":false},
+  {"producer_id":"dev.eshu.collector.confluence","version":"0.1.0","kind":"documentation_document","schema_versions":["1.0.0"],"scope":"documentation","expires_at":"2027-09-01T00:00:00Z","revoked":false},
+  {"producer_id":"dev.eshu.collector.confluence","version":"0.1.0","kind":"documentation_section","schema_versions":["1.1.0"],"scope":"documentation","expires_at":"2027-09-01T00:00:00Z","revoked":false},
+  {"producer_id":"dev.eshu.collector.confluence","version":"0.1.0","kind":"documentation_link","schema_versions":["1.0.0"],"scope":"documentation","expires_at":"2027-09-01T00:00:00Z","revoked":false}
+]
