@@ -139,8 +139,12 @@ file alone when its bytes and mode already match, so an init container can run
 it on every start, and it replaces a changed binary atomically. The manifest in
 the repository keeps a placeholder artifact digest, because an image cannot name
 its own digest. Pass the digest-pinned reference the pod runs (`--image-ref`, or
-`COLLECTOR_IMAGE_REF`) and the seeded manifest names it. `scripts/pin-digest.sh`
-resolves a pushed tag to that reference. Installing the seeded manifest still
+`COLLECTOR_IMAGE_REF`) and the seeded manifest names it; `seed` stamps only that
+reference into `artifacts[].image` and refuses anything that is not a
+`name[:port]/path@sha256:<64 hex>` reference. There is no release job or digest
+script in this repository yet: whoever publishes the image reads its digest from
+the registry. The image is always `linux/amd64` (the manifest's platform),
+whatever the builder is. Installing the seeded manifest still
 needs the four grants and the `eshu-hq` publisher on the allowlist; `eshu
 component enable` is not idempotent, so an init container must tolerate "already
 enabled".

@@ -19,8 +19,6 @@ import (
 
 var digestPattern = regexp.MustCompile(`@sha256:[a-f0-9]{64}$`)
 
-const placeholderDigest = "@sha256:0000000000000000000000000000000000000000000000000000000000000000"
-
 func loadManifest(t *testing.T) conformance.Manifest {
 	t.Helper()
 	raw, err := os.ReadFile("manifest.yaml")
@@ -81,7 +79,8 @@ func TestManifestDeclaresExactlyWhatTheCollectorEmits(t *testing.T) {
 // TestManifestReleaseProvenance proves the manifest is releasable: every
 // artifact is digest-pinned, the core range and wire protocol are declared, and
 // every fact family is versioned with declared confidence. The all-zero digest
-// is the pre-release placeholder; TestReleaseManifestIsPinned refuses it.
+// is a placeholder: the image cannot name its own digest, so `collector seed
+// --image-ref` stamps the real one into the seeded manifest.
 func TestManifestReleaseProvenance(t *testing.T) {
 	t.Parallel()
 
@@ -116,17 +115,26 @@ func TestManifestReleaseProvenance(t *testing.T) {
 	}
 }
 
-// TestReleaseManifestIsPinned fails while the manifest still carries the
-// placeholder digest. The release job sets RELEASE_MANIFEST_PINNED=1 after
-// scripts/pin-digest.sh records the pushed image digest; the pre-release suite
-// skips it.
-func TestReleaseManifestIsPinned(t *testing.T) {
-	if os.Getenv("RELEASE_MANIFEST_PINNED") != "1" {
-		t.Skip("pre-release: RELEASE_MANIFEST_PINNED is not set")
-	}
+// TestDockerfileBuildsTheManifestPlatform ties the image to the manifest. The
+// artifact declares linux/amd64, so the Dockerfile must not depend on the
+// builder's architecture: it pins the target of the static build and the
+// platform of the final stage.
+func TestDockerfileBuildsTheManifestPlatform(t *testing.T) {
+	t.Parallel()
+
 	for _, artifact := range loadManifest(t).Spec.Artifacts {
-		if strings.HasSuffix(artifact.Image, placeholderDigest) {
-			t.Fatalf("artifact image %q is the placeholder digest: run scripts/pin-digest.sh", artifact.Image)
+		if artifact.Platform != "linux/amd64" {
+			t.Fatalf("artifact platform = %q, this test and the Dockerfile assume linux/amd64", artifact.Platform)
+		}
+	}
+	raw, err := os.ReadFile("Dockerfile")
+	if err != nil {
+		t.Fatalf("os.ReadFile(Dockerfile) error = %v", err)
+	}
+	dockerfile := string(raw)
+	for _, want := range []string{"CGO_ENABLED=0", "GOOS=linux", "GOARCH=amd64", "FROM --platform=linux/amd64 gcr.io/distroless/"} {
+		if !strings.Contains(dockerfile, want) {
+			t.Errorf("Dockerfile lacks %q", want)
 		}
 	}
 }
