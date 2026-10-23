@@ -25,6 +25,7 @@ func TestImportBoundaryRejectsCoreAndCrossCollectorImports(t *testing.T) {
 		modulePath(t),
 		"github.com/eshu-hq/eshu/sdk/go/collector",
 		"github.com/eshu-hq/eshu/sdk/go/factschema",
+		"golang.org/x/net/html",
 		"gopkg.in/yaml.v3",
 	}
 	violations := []string{}

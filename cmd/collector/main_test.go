@@ -5,211 +5,149 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	sdk "github.com/eshu-hq/eshu/sdk/go/collector"
 
 	confluence "github.com/eshu-hq/eshu-collector-confluence"
-	sdk "github.com/eshu-hq/eshu/sdk/go/collector"
 )
 
-// TestNestedOptionalStringSeparatesMissingFromMalformed proves a missing key
-// falls back to the placeholder while a present-but-malformed value fails
-// closed instead of silently emitting against the placeholder.
-func TestNestedOptionalStringSeparatesMissingFromMalformed(t *testing.T) {
-	t.Parallel()
+const secret = "cmd-canary-token-42"
 
-	value, present, err := nestedOptionalString(map[string]any{}, "source", "sourceURI")
-	if err != nil || present || value != "" {
-		t.Fatalf("missing key = (%q, %v, %v), want empty/absent/nil", value, present, err)
-	}
-	if _, _, err := nestedOptionalString(map[string]any{
-		"source": map[string]any{"sourceURI": 42},
-	}, "source", "sourceURI"); err == nil {
-		t.Fatal("malformed value error = nil, want failure")
-	}
-	value, present, err = nestedOptionalString(map[string]any{
-		"source": map[string]any{"sourceURI": "https://example.invalid/x"},
-	}, "source", "sourceURI")
-	if err != nil || !present || value != "https://example.invalid/x" {
-		t.Fatalf("valid key = (%q, %v, %v), want value/present/nil", value, present, err)
-	}
-}
-
-// TestNegativeLimitFlagsFailClosed proves negative CLI limits fail instead
-// of silently selecting defaults, matching the config-file posture.
-func TestNegativeLimitFlagsFailClosed(t *testing.T) {
-	t.Parallel()
-
-	var stdout, stderr bytes.Buffer
-	err := run([]string{"--max-records", "-5"}, strings.NewReader(""), &stdout, &stderr)
-	if err == nil || !strings.Contains(err.Error(), "non-negative") {
-		t.Fatalf("run(negative flag) error = %v, want non-negative rejection", err)
-	}
-}
-
-// TestTerminalObservedAsFailure proves a terminal claim observes as a
-// Monitor failure (never a success): failures increment and LastSuccessAt
-// stays unset.
-func TestTerminalObservedAsFailure(t *testing.T) {
-	t.Parallel()
-
-	var stdout, stderr bytes.Buffer
-	err := run([]string{"--input", "../../testdata/complete.json", "--max-records", "1"}, strings.NewReader(""), &stdout, &stderr)
-	if err != nil {
-		t.Fatalf("run() error = %v, want nil (terminal encodes, not errors)", err)
-	}
-	health := stderrHealth(t, stderr.String())
-	if health["consecutive_failures"] != 1.0 {
-		t.Fatalf("consecutive_failures = %v, want 1", health["consecutive_failures"])
-	}
-	// time.Time always marshals, so "unset" reads as the zero timestamp.
-	if health["last_success_at"] != "0001-01-01T00:00:00Z" {
-		t.Fatalf("last_success_at = %v after terminal, want zero", health["last_success_at"])
-	}
-	if health["last_error"] != "record-budget-exceeded" {
-		t.Fatalf("last_error = %v, want the terminal failure class", health["last_error"])
-	}
-}
-
-// TestUnchangedMovesNothing proves an unchanged outcome performs no Monitor
-// observation at all: no success timestamp advance and no digest write, so a
-// long-lived process never wipes its last good digest on a freshness check.
-func TestUnchangedMovesNothing(t *testing.T) {
-	t.Parallel()
-
-	var firstOut, firstErr bytes.Buffer
-	if err := run([]string{"--input", "../../testdata/complete.json"}, strings.NewReader(""), &firstOut, &firstErr); err != nil {
-		t.Fatalf("run() error = %v", err)
-	}
-	digest, ok := stderrHealth(t, firstErr.String())["last_digest"].(string)
-	if !ok || digest == "" {
-		t.Fatal("first run produced no digest to replay")
-	}
-	var secondOut, secondErr bytes.Buffer
-	if err := run([]string{"--input", "../../testdata/complete.json", "--previous-digest", digest}, strings.NewReader(""), &secondOut, &secondErr); err != nil {
-		t.Fatalf("run() error = %v", err)
-	}
-	secondHealth := stderrHealth(t, secondErr.String())
-	if secondHealth["last_success_at"] != "0001-01-01T00:00:00Z" {
-		t.Fatalf("unchanged run advanced last_success_at: %v", secondHealth)
-	}
-	if failures, ok := secondHealth["consecutive_failures"]; ok && failures != 0.0 {
-		t.Fatalf("unchanged run recorded failures: %v", secondHealth)
-	}
-}
-
-// TestWrongTypedIntermediateNodeFailsClosed proves a present-but-wrong-typed
-// config node errors instead of silently selecting defaults.
-func TestWrongTypedIntermediateNodeFailsClosed(t *testing.T) {
-	t.Parallel()
-
-	if _, _, err := nestedOptionalString(map[string]any{"source": 42.0}, "source", "sourceURI"); err == nil {
-		t.Fatal("wrong-typed intermediate error = nil, want failure")
-	}
-	if _, _, err := nestedOptionalNumber(map[string]any{"limits": "many"}, "limits", "maxRecordsPerClaim"); err == nil {
-		t.Fatal("wrong-typed limits error = nil, want failure")
-	}
-}
-
-func stderrHealth(t *testing.T, stderr string) map[string]any {
+// confluenceStub serves one space with one page.
+func confluenceStub(t *testing.T) *httptest.Server {
 	t.Helper()
-	const prefix = "collector health: "
-	index := strings.LastIndex(stderr, prefix)
-	if index < 0 {
-		t.Fatalf("stderr missing health snapshot: %q", stderr)
+	mux := http.NewServeMux()
+	write := func(w http.ResponseWriter, value any) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(value)
 	}
-	var envelope map[string]any
-	if err := json.Unmarshal([]byte(strings.TrimSpace(stderr[index+len(prefix):])), &envelope); err != nil {
-		t.Fatalf("json.Unmarshal(health) error = %v", err)
+	page := map[string]any{
+		"id": "1001", "status": "current", "title": "Runbook", "spaceId": "12345",
+		"version": map[string]any{"number": 2, "createdAt": "2026-09-01T10:00:00.000Z"},
+		"body":    map[string]any{"storage": map[string]any{"value": `<p><a href="https://docs.example.invalid/x">x</a></p>`, "representation": "storage"}},
+		"_links":  map[string]any{"webui": "/spaces/ENG/pages/1001"},
 	}
-	health, ok := envelope["health"].(map[string]any)
-	if !ok {
-		t.Fatalf("health envelope shape wrong: %v", envelope)
-	}
-	return health
-}
-
-// TestNestedLimitsConsumesConfigBlock proves the limits block from
-// config.example.yaml reaches CollectOptions: absent selects defaults,
-// partial overrides per field, malformed fails closed.
-func TestNestedLimitsConsumesConfigBlock(t *testing.T) {
-	t.Parallel()
-
-	deflated, err := nestedLimits(map[string]any{})
-	if err != nil {
-		t.Fatalf("nestedLimits(empty) error = %v", err)
-	}
-	if deflated != confluence.DefaultResourceUse() {
-		t.Fatalf("nestedLimits(empty) = %+v, want defaults", deflated)
-	}
-	partial, err := nestedLimits(map[string]any{
-		"limits": map[string]any{"maxRecordsPerClaim": 7.0},
+	mux.HandleFunc("/wiki/api/v2/spaces/12345", func(w http.ResponseWriter, r *http.Request) {
+		write(w, map[string]any{"id": "12345", "key": "ENG", "name": "Engineering"})
 	})
-	if err != nil {
-		t.Fatalf("nestedLimits(partial) error = %v", err)
-	}
-	if partial.MaxRecordsPerClaim != 7 || partial.MaxPayloadBytes != confluence.DefaultResourceUse().MaxPayloadBytes {
-		t.Fatalf("nestedLimits(partial) = %+v, want override + defaults", partial)
-	}
-	if _, err := nestedLimits(map[string]any{
-		"limits": map[string]any{"maxRecordsPerClaim": "many"},
-	}); err == nil {
-		t.Fatal("nestedLimits(malformed) error = nil, want failure")
-	}
+	mux.HandleFunc("/wiki/api/v2/spaces/12345/pages", func(w http.ResponseWriter, r *http.Request) {
+		write(w, map[string]any{"results": []any{page}, "_links": map[string]any{}})
+	})
+	mux.HandleFunc("/wiki/api/v2/pages/1001", func(w http.ResponseWriter, r *http.Request) { write(w, page) })
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+	return server
 }
 
-// TestRunWithTimeoutFailsSlowWork proves the shared wall-time runner fails
-// a collection that outruns ClaimTimeoutSeconds instead of waiting
-// unbounded. Both entry modes (local flags and SDK stdio) run through it,
-// so one mechanism test covers the bound behind both.
-func TestRunWithTimeoutFailsSlowWork(t *testing.T) {
-	t.Parallel()
-
-	release := make(chan struct{})
-	defer close(release)
-	bounds := confluence.DefaultResourceUse()
-	bounds.ClaimTimeoutSeconds = 1
-	_, err := runWithTimeout(func() (sdk.Result, error) {
-		<-release
-		return sdk.Result{}, nil
-	}, bounds)
-	if err == nil || !strings.Contains(err.Error(), "wall-time bound of 1 seconds exceeded") {
-		t.Fatalf("runWithTimeout(slow) error = %v, want wall-time bound failure", err)
-	}
-}
-
-// TestStdioPathCollectsRequest proves the --sdk-stdio path still collects
-// after the parse/collect split and reports the request's limits: a host
-// request against the complete fixture emits a complete result, and the
-// request's custom claim timeout reaches the health snapshot.
-func TestStdioPathCollectsRequest(t *testing.T) {
-	t.Parallel()
-
-	request := sdkRequest{
+func requestJSON(t *testing.T, baseURL string) string {
+	t.Helper()
+	request := confluence.Request{
 		ProtocolVersion: sdk.ProtocolVersionV1Alpha1,
-		Claim:           sdk.Claim{Scope: sdk.Scope{ID: "component:confluence-primary", Kind: "component"}},
-		Config: map[string]any{
-			"source": map[string]any{"input": "../../testdata/complete.json"},
-			"limits": map[string]any{"claimTimeoutSeconds": 60.0},
+		Claim: sdk.Claim{
+			ComponentID: confluence.ComponentID, InstanceID: "confluence-eng", CollectorKind: confluence.CollectorKind,
+			SourceSystem: confluence.SourceSystem,
+			Scope:        sdk.Scope{ID: "doc-source:confluence:confluence.example.invalid:12345", Kind: "documentation_source"},
+			SourceRunID:  "component-generation:abc", GenerationID: "component-generation:abc", WorkItemID: "component-work:abc",
+			FencingToken: "7", Attempt: 1, Deadline: time.Now().Add(time.Hour), ConfigHandle: "component-config:confluence",
 		},
+		Contract: confluence.Contract(),
+		Config:   map[string]any{"source": map[string]any{"base_url": baseURL + "/wiki", "space_id": "12345"}},
 	}
-	var stdin bytes.Buffer
-	if err := json.NewEncoder(&stdin).Encode(request); err != nil {
-		t.Fatalf("json.Encode(request) error = %v", err)
+	raw, err := json.Marshal(request)
+	if err != nil {
+		t.Fatalf("Marshal(request) error = %v", err)
 	}
+	return string(raw)
+}
+
+func getenv(values map[string]string) func(string) string {
+	return func(key string) string { return values[key] }
+}
+
+func TestRunStdioWritesExactlyOneResultToStdout(t *testing.T) {
+	t.Parallel()
+
+	server := confluenceStub(t)
 	var stdout, stderr bytes.Buffer
-	if err := run([]string{"--sdk-stdio"}, &stdin, &stdout, &stderr); err != nil {
-		t.Fatalf("run(--sdk-stdio) error = %v", err)
+	env := getenv(map[string]string{"ESHU_CONFLUENCE_BEARER_TOKEN": secret})
+	err := run(context.Background(), []string{"--sdk-stdio"}, strings.NewReader(requestJSON(t, server.URL)), &stdout, &stderr, env)
+	if err != nil {
+		t.Fatalf("run() error = %v; stderr = %s", err, stderr.String())
+	}
+	decoder := json.NewDecoder(&stdout)
+	decoder.DisallowUnknownFields()
+	var result sdk.Result
+	if err := decoder.Decode(&result); err != nil {
+		t.Fatalf("stdout is not one SDK result: %v", err)
+	}
+	if decoder.More() {
+		t.Fatal("stdout carries more than one JSON document")
+	}
+	if result.State != sdk.ResultComplete {
+		t.Fatalf("State = %q, want complete", result.State)
+	}
+	if _, err := sdk.NewValidator(confluence.Contract()).ValidateResult(result); err != nil {
+		t.Fatalf("ValidateResult() error = %v", err)
+	}
+	if !strings.Contains(stderr.String(), "collector health:") {
+		t.Errorf("stderr = %q, want the health line", stderr.String())
+	}
+	if strings.Contains(stderr.String(), secret) || strings.Contains(stdout.String(), secret) {
+		t.Error("the credential reached an output stream")
+	}
+}
+
+func TestRunStdioReportsMissingCredentialsAsAResult(t *testing.T) {
+	t.Parallel()
+
+	server := confluenceStub(t)
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{"--sdk-stdio"}, strings.NewReader(requestJSON(t, server.URL)), &stdout, &stderr, getenv(nil))
+	if err != nil {
+		t.Fatalf("run() error = %v, want the host to receive a terminal result", err)
 	}
 	var result sdk.Result
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
-		t.Fatalf("json.Unmarshal(result) error = %v", err)
+		t.Fatalf("stdout is not an SDK result: %v", err)
 	}
-	if result.State != sdk.ResultComplete {
-		t.Fatalf("State = %q, want complete for the stdio fixture run", result.State)
+	if result.State != sdk.ResultTerminal || result.Statuses[0].FailureClass != confluence.FailureMissingCredentials {
+		t.Fatalf("result = %q %#v, want terminal missing-credentials", result.State, result.Statuses)
 	}
-	if !strings.Contains(stderr.String(), `"claim_timeout_seconds":60`) {
-		t.Fatalf("health snapshot missing the request timeout: %q", stderr.String())
+	if !strings.Contains(stderr.String(), "ESHU_CONFLUENCE_API_TOKEN") {
+		t.Errorf("stderr = %q, want the missing variable named", stderr.String())
+	}
+}
+
+func TestRunRejectsBadInvocationsWithoutWritingAResult(t *testing.T) {
+	t.Parallel()
+
+	server := confluenceStub(t)
+	env := getenv(map[string]string{"ESHU_CONFLUENCE_BEARER_TOKEN": secret})
+	tests := map[string]struct {
+		args  []string
+		stdin string
+	}{
+		"no flag":          {args: nil, stdin: requestJSON(t, server.URL)},
+		"unknown flag":     {args: []string{"--nope"}, stdin: ""},
+		"empty stdin":      {args: []string{"--sdk-stdio"}, stdin: ""},
+		"garbage stdin":    {args: []string{"--sdk-stdio"}, stdin: "{"},
+		"wrong protocol":   {args: []string{"--sdk-stdio"}, stdin: strings.Replace(requestJSON(t, server.URL), "v1alpha1", "v9", 1)},
+		"missing claim id": {args: []string{"--sdk-stdio"}, stdin: strings.Replace(requestJSON(t, server.URL), `"work_item_id":"component-work:abc"`, `"work_item_id":""`, 1)},
+	}
+	for name, tt := range tests {
+		var stdout, stderr bytes.Buffer
+		if err := run(context.Background(), tt.args, strings.NewReader(tt.stdin), &stdout, &stderr, env); err == nil {
+			t.Errorf("%s: run() error = nil, want a failure", name)
+		}
+		if stdout.Len() != 0 {
+			t.Errorf("%s: stdout = %q, want nothing on a refused invocation", name, stdout.String())
+		}
 	}
 }
