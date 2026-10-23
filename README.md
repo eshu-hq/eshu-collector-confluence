@@ -61,13 +61,18 @@ never carry a token, URL, page id, title, or provider body.
 
 The extension host buffers a collector process's stderr and records only its
 size (`stderr_bytes`) in a launch failure. It is never logged or stored. The
-operator signal is therefore the SDK status rows the host records for each
-claim, and each row carries everything this collector reports:
+collector reports its outcome as SDK status rows, one per claim, and each row
+carries everything this collector reports:
 
 | Row | Fields |
 | --- | --- |
 | complete or partial | `fact_count`, `source_latency_ms`, and for a partial snapshot `partial` and `warning_count` (skipped pages, plus one when the walk hit `max_total_pages`) |
 | retryable or terminal | `failure_class`, `retry_after_seconds` (retryable), and `source_latency_ms` (how long the claim ran before it failed) |
+
+The worker sets no status recorder yet, so the host drops these rows today and
+only the failure class reaches the work item. The host records the rows once
+eshu-hq/eshu#8908 lands; the latency, counts, and retry hint above are not
+visible to operators before then.
 
 `failure_class` is a bounded token from the table above. `unsupported_option`
 means the activation set `attestation.allow_empty_successor: true`, the only
@@ -156,7 +161,9 @@ enabled".
 Check these on the reference activation before the in-tree collector is removed:
 
 - **Space read time vs lease TTL.** Measure how long the largest space takes
-  to read (the status row's `source_latency_ms`). It must fit inside the worker
+  to read: the status row's `source_latency_ms` once the host records it
+  (eshu-hq/eshu#8908), or by timing a run of the binary by hand against the
+  space until then. It must fit inside the worker
   lease TTL minus the deadline margin. A read that does not fit retries with
   `claim-deadline-exceeded` until the host's attempt budget is spent, then
   dead-letters. Raise `ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL` on the worker
@@ -178,18 +185,37 @@ pushes `ghcr.io/eshu-hq/eshu-collector-confluence:<tag>`, writes the image
 digest to the job summary, signs the digest with cosign (keyless), and attaches
 a build provenance attestation and an SBOM attestation. It reads no secret but
 `GITHUB_TOKEN`, deploys nothing, and publishes nothing for a pull request or a
-branch push. Bump `metadata.version` in `manifest.yaml` before tagging.
+branch push.
+
+Before the first tag:
+
+- **Restrict who can create `v*` tags.** A `v*` tag on any commit publishes,
+  whether or not that commit is on `main`. Add a repository tag ruleset that
+  limits creation of `v*` tags to maintainers.
+- **Bump `metadata.version` in `manifest.yaml` before tagging.** The verify job
+  fails unless the tag is `v` plus that version, optionally followed by a
+  pre-release suffix after the first `-` (`v0.1.0-rc1`). A grant pins the
+  manifest version, so the two must agree.
 
 Then:
 
 1. The first publish creates a private package. Make
    `ghcr.io/eshu-hq/eshu-collector-confluence` **public** in the package
    settings once; a worker cannot pull a private package without credentials.
-2. Copy the digest reference from the job summary
+2. Confirm an anonymous pull works after the visibility change. The workflow
+   verifies with its own token, so it passes while the package is private:
+
+   ```bash
+   docker manifest inspect ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest>
+   ```
+
+   Run it from a shell that is not logged in to GHCR (`docker logout ghcr.io`
+   first if needed). It must print the manifest, not an authorization error.
+3. Copy the digest reference from the job summary
    (`ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest>`) into the
    activation's `seed.image`, and seed with `--image-ref` or
    `COLLECTOR_IMAGE_REF`.
-3. Verify before use (the workflow ref is the tag that was pushed):
+4. Verify before use (the workflow ref is the tag that was pushed):
 
 ```bash
 cosign verify ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest> \
@@ -214,10 +240,11 @@ gh attestation verify oci://ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<di
   such a snapshot, as it does for any collector. Removal condition: a collector
   SDK release that carries `TrustedDeletion`, then set it from the option and
   delete the refusal in `parseAttestation`.
-- No OTEL metrics or traces. The manifest declares the metric prefix
-  `eshu_dp_confluence_collector_`, but SDK v0.2.0 gives an out-of-process
-  collector no telemetry channel beyond the status rows, so nothing emits it.
-  The in-tree Confluence metrics have no equivalent yet.
+- No OTEL metrics or traces. Out-of-process collectors emit no metrics or
+  traces by design (arbiter ruling, 2026-10-23): the SDK status record is the
+  contract and the host records it once eshu-hq/eshu#8908 lands. The manifest
+  declares the metric prefix `eshu_dp_confluence_collector_`, but nothing in
+  this process emits it, and the in-tree Confluence metrics have no equivalent.
 - `internal/stableid` and `internal/httpx` are copies of in-tree helpers. Replace
   them with the published eshu-sdk helpers when eshu-hq/eshu#8851 lands.
 

@@ -13,9 +13,11 @@ import (
 // Health is a debug summary of one served claim, written as one JSON line on
 // stderr. It is NOT the operator signal: the extension host buffers a
 // process's stderr and reports only its size (stderr_bytes), so operators do
-// not see this line. It helps in a local run of the binary. What operators read
-// is the SDK status rows in the result (state, failure class, retry hint, fact
-// and warning counts, source latency). Every field here is a count, a bounded
+// not see this line. It helps in a local run of the binary. The collector's
+// contract with the host is the SDK status rows in the result (state, failure
+// class, retry hint, fact and warning counts, source latency); the worker does
+// not record them yet (eshu-hq/eshu#8908), so today only the failure class
+// reaches the work item. Every field here is a count, a bounded
 // class, or an opaque hash: it never carries a URL, page id, title, body,
 // token, or provider response.
 type Health struct {
