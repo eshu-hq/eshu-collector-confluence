@@ -34,6 +34,22 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+      # A grant pins the manifest version, so a tag that disagrees with it would
+      # publish an image no activation can install. A pre-release suffix after
+      # the first '-' (v0.1.0-rc1) is allowed on top of the manifest version.
+      - name: Check the tag matches the manifest version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(awk '/^metadata:/ {in_meta=1; next} /^[^ ]/ {in_meta=0} in_meta && /^  version:/ {print $2; exit}' manifest.yaml | tr -d "\"'")"
+          if [ -z "${version}" ]; then
+            echo "manifest.yaml has no metadata.version" >&2
+            exit 1
+          fi
+          if [ "${TAG}" != "v${version}" ] && [ "${TAG%%-*}" != "v${version}" ]; then
+            echo "tag ${TAG} does not match manifest version ${version}: want v${version} or v${version}-<pre-release>" >&2
+            exit 1
+          fi
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
