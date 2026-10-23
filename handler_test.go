@@ -32,10 +32,10 @@ func TestHandleServesAClaimEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Handle() error = %v", err)
 	}
-	if handled.Outcome.State != sdk.ResultComplete {
-		t.Fatalf("State = %q, want complete", handled.Outcome.State)
+	if handled.Result.State != sdk.ResultComplete {
+		t.Fatalf("State = %q, want complete", handled.Result.State)
 	}
-	assertHostAccepts(t, handled.Outcome.Result)
+	assertHostAccepts(t, handled.Result)
 	if handled.Requests["get_space/success"] != 1 || handled.Requests["fetch_page/success"] != 2 {
 		t.Errorf("requests = %v, want one space read and two page reads", handled.Requests)
 	}
@@ -49,7 +49,7 @@ func TestHandleServesAClaimEndToEnd(t *testing.T) {
 	if err := json.Unmarshal(line, &health); err != nil {
 		t.Fatalf("Unmarshal(health) error = %v", err)
 	}
-	if health.Health.State != sdk.ResultComplete || health.Health.FactCount != len(handled.Outcome.Facts) || health.Health.ElapsedMS != 1500 {
+	if health.Health.State != sdk.ResultComplete || health.Health.FactCount != len(handled.Result.Facts) || health.Health.ElapsedMS != 1500 {
 		t.Errorf("health = %+v", health.Health)
 	}
 	for _, leak := range []string{canaryToken, site.server.URL, "Runbook"} {
@@ -69,16 +69,16 @@ func TestHandleReturnsATerminalResultForABadActivationConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Handle() error = %v, want a result the host records", err)
 	}
-	if handled.Outcome.State != sdk.ResultTerminal || failureClassOf(t, handled.Outcome.Result) != FailureInvalidConfig {
-		t.Fatalf("state %q class %q, want terminal invalid-config", handled.Outcome.State, failureClassOf(t, handled.Outcome.Result))
+	if handled.Result.State != sdk.ResultTerminal || failureClassOf(t, handled.Result) != FailureInvalidConfig {
+		t.Fatalf("state %q class %q, want terminal invalid-config", handled.Result.State, failureClassOf(t, handled.Result))
 	}
-	if handled.Outcome.Claim != request.Claim {
+	if handled.Result.Claim != request.Claim {
 		t.Error("the failure result must echo the host claim")
 	}
 	if len(site.recorded()) != 0 {
 		t.Error("a bad config must not reach the provider")
 	}
-	assertHostAccepts(t, handled.Outcome.Result)
+	assertHostAccepts(t, handled.Result)
 }
 
 func TestHandleReportsMissingCredentialsWithoutLeaking(t *testing.T) {
@@ -89,8 +89,8 @@ func TestHandleReportsMissingCredentialsWithoutLeaking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Handle() error = %v", err)
 	}
-	if failureClassOf(t, handled.Outcome.Result) != FailureMissingCredentials {
-		t.Fatalf("class = %q, want missing-credentials", failureClassOf(t, handled.Outcome.Result))
+	if failureClassOf(t, handled.Result) != FailureMissingCredentials {
+		t.Fatalf("class = %q, want missing-credentials", failureClassOf(t, handled.Result))
 	}
 	if !strings.Contains(handled.Detail, "ESHU_CONFLUENCE_API_TOKEN") {
 		t.Errorf("detail = %q, want it to name the variable to set", handled.Detail)
@@ -149,7 +149,7 @@ func TestNoOutputEverCarriesTheCredential(t *testing.T) {
 		t.Fatalf("Handle() error = %v", err)
 	}
 	line, _ := HealthLine(handled, time.Second)
-	raw, _ := json.Marshal(handled.Outcome)
+	raw, _ := json.Marshal(handled.Result)
 	for _, output := range []string{string(raw), string(line), handled.Detail} {
 		if strings.Contains(output, canaryToken) || strings.Contains(output, "bot@example.invalid") {
 			t.Errorf("output leaks a credential: %s", output)

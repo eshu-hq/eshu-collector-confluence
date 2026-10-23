@@ -88,6 +88,9 @@ const (
 	FailureUntrustedLink = "untrusted-next-link"
 	// FailureDeadline marks a claim whose deadline passed before completion.
 	FailureDeadline = "claim-deadline-exceeded"
+	// FailureUnsupportedOption marks an activation option the published SDK
+	// cannot carry yet, so the collector refuses it instead of ignoring it.
+	FailureUnsupportedOption = "unsupported_option"
 	// FailureInvalidClaim marks a claim the collector cannot serve.
 	FailureInvalidClaim = "invalid-claim"
 	// FailureInternal marks a fact-build failure inside the collector.

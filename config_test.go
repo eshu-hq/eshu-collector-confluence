@@ -40,7 +40,7 @@ func TestParseConfigAppliesDocumentedDefaults(t *testing.T) {
 	}
 	if cfg.PageLimit != 100 || cfg.MaxTotalPages != 5000 || cfg.FetchConcurrency != 4 ||
 		cfg.ClaimTimeout != 300*time.Second || cfg.MaxPageBytes != 1<<20 ||
-		cfg.MaxResultBytes != defaultMaxResultBytes || cfg.MaxResponseBytes != 16<<20 || cfg.AllowEmptySuccessor {
+		cfg.MaxResultBytes != defaultMaxResultBytes || cfg.MaxResponseBytes != 16<<20 {
 		t.Errorf("defaults = %+v", cfg)
 	}
 }
@@ -68,7 +68,6 @@ func TestParseConfigReadsEveryOverride(t *testing.T) {
 	raw := validRaw()
 	raw["source"].(map[string]any)["page_limit"] = 50
 	raw["source"].(map[string]any)["max_total_pages"] = float64(750)
-	raw["attestation"] = map[string]any{"allow_empty_successor": true}
 	raw["limits"] = map[string]any{
 		"claim_timeout_seconds": 60, "fetch_concurrency": 2, "max_page_bytes": 2048,
 		"max_result_bytes": 1_000_000, "max_response_bytes": 4096,
@@ -77,7 +76,7 @@ func TestParseConfigReadsEveryOverride(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseConfig() error = %v", err)
 	}
-	if cfg.PageLimit != 50 || cfg.MaxTotalPages != 750 || !cfg.AllowEmptySuccessor || cfg.ClaimTimeout != time.Minute ||
+	if cfg.PageLimit != 50 || cfg.MaxTotalPages != 750 || cfg.ClaimTimeout != time.Minute ||
 		cfg.FetchConcurrency != 2 || cfg.MaxPageBytes != 2048 || cfg.MaxResultBytes != 1_000_000 || cfg.MaxResponseBytes != 4096 {
 		t.Errorf("config = %+v", cfg)
 	}
@@ -215,6 +214,29 @@ func TestCredentialsNeverFormatTheirSecrets(t *testing.T) {
 	} {
 		if strings.Contains(rendered, canaryToken) || strings.Contains(rendered, "bot@example.invalid") {
 			t.Errorf("formatting leaked a credential: %q", rendered)
+		}
+	}
+}
+
+func TestParseConfigRefusesTheEmptySuccessorAttestation(t *testing.T) {
+	t.Parallel()
+
+	raw := validRaw()
+	raw["attestation"] = map[string]any{"allow_empty_successor": true}
+	_, err := ParseConfig(raw, envFrom(basicEnv))
+	if err == nil || ClassifyConfigError(err) != FailureUnsupportedOption {
+		t.Fatalf("ParseConfig() error = %v class %q, want unsupported_option", err, ClassifyConfigError(err))
+	}
+	if !strings.Contains(err.Error(), "allow_empty_successor") {
+		t.Errorf("error %q does not name the option", err)
+	}
+	for _, value := range []any{false, nil} {
+		raw["attestation"] = map[string]any{"allow_empty_successor": value}
+		if value == nil {
+			raw["attestation"] = map[string]any{}
+		}
+		if _, err := ParseConfig(raw, envFrom(basicEnv)); err != nil {
+			t.Errorf("allow_empty_successor %v: ParseConfig() error = %v, want it accepted", value, err)
 		}
 	}
 }

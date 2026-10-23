@@ -74,5 +74,5 @@ func runStdio(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.
 	}
 	// Compact output: the host caps stdout, and the result byte budget is
 	// measured on the compact encoding.
-	return json.NewEncoder(stdout).Encode(handled.Outcome)
+	return json.NewEncoder(stdout).Encode(handled.Result)
 }

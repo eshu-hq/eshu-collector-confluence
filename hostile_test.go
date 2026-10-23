@@ -26,7 +26,7 @@ func TestCollectStripsNULAndInvalidUTF8(t *testing.T) {
 	if outcome.State != sdk.ResultComplete {
 		t.Fatalf("State = %q, want complete", outcome.State)
 	}
-	assertHostAccepts(t, outcome.Result)
+	assertHostAccepts(t, outcome)
 	raw, _ := json.Marshal(outcome)
 	if strings.Contains(string(raw), `\u0000`) {
 		t.Fatalf("result carries a NUL escape the store cannot hold: %s", raw)
@@ -45,7 +45,7 @@ func TestCollectKeepsOtherControlCharactersEscaped(t *testing.T) {
 	page := samplePage("7002", "Tab\there\x07bell")
 	site.addPage(page)
 	outcome := collectOnce(t, site, testConfig(site), testClaim())
-	assertHostAccepts(t, outcome.Result)
+	assertHostAccepts(t, outcome)
 	for _, fact := range outcome.Facts {
 		if fact.Kind == FactKindDocument && fact.Payload["title"] != "Tab\there\x07bell" {
 			t.Errorf("title = %q, want other control characters preserved", fact.Payload["title"])
@@ -73,7 +73,7 @@ func TestCollectReplacesHostileWebLinksWithTheRESTURI(t *testing.T) {
 			if outcome.State != sdk.ResultComplete {
 				t.Fatalf("State = %q, want complete; a hostile link must not fail the claim", outcome.State)
 			}
-			assertHostAccepts(t, outcome.Result)
+			assertHostAccepts(t, outcome)
 			for _, fact := range outcome.Facts {
 				if fact.Kind == FactKindDocument {
 					want := site.baseURL() + "/api/v2/pages/7003"
@@ -130,9 +130,9 @@ func TestCollectMalformedStorageFormatStillYieldsAPage(t *testing.T) {
 			if outcome.State != sdk.ResultComplete {
 				t.Fatalf("State = %q, want complete", outcome.State)
 			}
-			assertHostAccepts(t, outcome.Result)
-			if kindCounts(outcome.Result)[FactKindDocument] != 1 || kindCounts(outcome.Result)[FactKindSection] != 1 {
-				t.Errorf("counts = %v, want one document and one section", kindCounts(outcome.Result))
+			assertHostAccepts(t, outcome)
+			if kindCounts(outcome)[FactKindDocument] != 1 || kindCounts(outcome)[FactKindSection] != 1 {
+				t.Errorf("counts = %v, want one document and one section", kindCounts(outcome))
 			}
 		})
 	}
@@ -170,7 +170,7 @@ func TestCollectSkipsPagesOverThePageByteCap(t *testing.T) {
 	if outcome.State != sdk.ResultPartial {
 		t.Fatalf("State = %q, want partial when a page is skipped", outcome.State)
 	}
-	assertHostAccepts(t, outcome.Result)
+	assertHostAccepts(t, outcome)
 	for _, fact := range outcome.Facts {
 		if fact.SourceRef.RecordID == "7102" {
 			t.Fatal("an oversize page must be skipped whole, never truncated")
@@ -198,12 +198,12 @@ func TestCollectKeepsTheResultUnderTheByteBudget(t *testing.T) {
 	if outcome.State != sdk.ResultPartial {
 		t.Fatalf("State = %q, want partial when the budget cuts pages", outcome.State)
 	}
-	assertHostAccepts(t, outcome.Result)
+	assertHostAccepts(t, outcome)
 	raw, _ := json.Marshal(outcome)
 	if len(raw) > cfg.MaxResultBytes {
 		t.Fatalf("result is %d bytes, over the %d byte budget", len(raw), cfg.MaxResultBytes)
 	}
-	included := kindCounts(outcome.Result)[FactKindDocument]
+	included := kindCounts(outcome)[FactKindDocument]
 	if included == 0 || included >= 40 {
 		t.Fatalf("included pages = %d, want some but not all of 40", included)
 	}
@@ -212,8 +212,8 @@ func TestCollectKeepsTheResultUnderTheByteBudget(t *testing.T) {
 		t.Errorf("coverage_warning = %v, want truncated", metadata["coverage_warning"])
 	}
 	// Pages are included whole: every document has its section.
-	if kindCounts(outcome.Result)[FactKindSection] != included {
-		t.Errorf("sections = %d, documents = %d, want a section for every document", kindCounts(outcome.Result)[FactKindSection], included)
+	if kindCounts(outcome)[FactKindSection] != included {
+		t.Errorf("sections = %d, documents = %d, want a section for every document", kindCounts(outcome)[FactKindSection], included)
 	}
 	// The same budget cuts the same pages on a rerun.
 	again, _ := json.Marshal(collectOnce(t, site, cfg, testClaim()))
@@ -237,7 +237,7 @@ func TestCollectManyLinksAreBoundedByTheBudget(t *testing.T) {
 	cfg := testConfig(site)
 	cfg.MaxPageBytes = 2 << 20
 	outcome := collectOnce(t, site, cfg, testClaim())
-	assertHostAccepts(t, outcome.Result)
+	assertHostAccepts(t, outcome)
 	raw, _ := json.Marshal(outcome)
 	if len(raw) > cfg.MaxResultBytes {
 		t.Fatalf("result is %d bytes, over the %d byte budget", len(raw), cfg.MaxResultBytes)
@@ -250,7 +250,7 @@ func TestCollectManyLinksAreBoundedByTheBudget(t *testing.T) {
 			t.Fatal("the over-budget page must be left out whole")
 		}
 	}
-	if kindCounts(outcome.Result)[FactKindDocument] != 1 {
+	if kindCounts(outcome)[FactKindDocument] != 1 {
 		t.Error("the later, smaller page must still be included")
 	}
 }
@@ -269,8 +269,8 @@ func TestCollectRejectsAnOversizeProviderResponse(t *testing.T) {
 	cfg := testConfig(site)
 	cfg.MaxResponseBytes = 1024
 	outcome := collectOnce(t, site, cfg, testClaim())
-	if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome.Result) != FailureResponseTooLarge {
-		t.Fatalf("state %q class %q, want terminal response-too-large", outcome.State, failureClassOf(t, outcome.Result))
+	if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome) != FailureResponseTooLarge {
+		t.Fatalf("state %q class %q, want terminal response-too-large", outcome.State, failureClassOf(t, outcome))
 	}
 }
 
@@ -292,8 +292,8 @@ func TestCollectGarbageResponsesAreTerminalNotRetried(t *testing.T) {
 			}
 			site.mu.Unlock()
 			outcome := collectOnce(t, site, testConfig(site), testClaim())
-			if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome.Result) != FailureInvalidResponse {
-				t.Fatalf("state %q class %q, want terminal invalid-response", outcome.State, failureClassOf(t, outcome.Result))
+			if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome) != FailureInvalidResponse {
+				t.Fatalf("state %q class %q, want terminal invalid-response", outcome.State, failureClassOf(t, outcome))
 			}
 		})
 	}

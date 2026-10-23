@@ -258,7 +258,7 @@ func testConfig(site *fakeSite) Config {
 	}
 }
 
-func collectOnce(t *testing.T, site *fakeSite, cfg Config, claim sdk.Claim) Outcome {
+func collectOnce(t *testing.T, site *fakeSite, cfg Config, claim sdk.Claim) sdk.Result {
 	t.Helper()
 	collector := &Collector{Config: cfg, Clock: fixedClock()}
 	return collector.Collect(t.Context(), claim)

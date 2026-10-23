@@ -96,58 +96,66 @@ func TestFreshnessHintTracksContentNotTime(t *testing.T) {
 	}
 }
 
-func TestEmptySuccessorAttestationReachesTheWire(t *testing.T) {
+// TestEmptySuccessorAttestationFailsClosed proves the one in-tree option the
+// published SDK cannot carry is refused, not ignored: attestation.allow_empty_successor
+// true is a terminal unsupported_option before any provider request, while
+// absent and false behave the same as each other.
+func TestEmptySuccessorAttestationFailsClosed(t *testing.T) {
 	t.Parallel()
 
 	site := newFakeSite(t)
-	cfg := testConfig(site)
-
-	plain := collectOnce(t, site, cfg, testClaim())
-	plainJSON, _ := json.Marshal(plain)
-	if strings.Contains(string(plainJSON), "trusted_deletion") {
-		t.Errorf("unattested result carries trusted_deletion: %s", plainJSON)
+	request := requestFor(site)
+	request.Config["attestation"] = map[string]any{"allow_empty_successor": true}
+	handled, err := Handle(t.Context(), request, HandleOptions{Getenv: envFrom(basicEnv), Clock: fixedClock()})
+	if err != nil {
+		t.Fatalf("Handle() error = %v, want a result the host records", err)
 	}
-	baseline, _ := json.Marshal(plain.Result)
-	if !bytes.Equal(plainJSON, baseline) {
-		t.Errorf("an unattested result must be byte-identical to a plain sdk.Result:\n%s\n---\n%s", plainJSON, baseline)
+	result := handled.Result
+	if result.State != sdk.ResultTerminal || failureClassOf(t, result) != FailureUnsupportedOption {
+		t.Fatalf("state %q class %q, want terminal unsupported_option", result.State, failureClassOf(t, result))
 	}
-
-	cfg.AllowEmptySuccessor = true
-	attested := collectOnce(t, site, cfg, testClaim())
-	if !attested.TrustedDeletion {
-		t.Fatal("TrustedDeletion = false, want the operator attestation forwarded")
+	if len(result.Facts) != 0 || len(site.recorded()) != 0 {
+		t.Errorf("facts = %d, provider requests = %d, want none before the refusal", len(result.Facts), len(site.recorded()))
 	}
-	raw, _ := json.Marshal(attested)
-	var decoded struct {
-		Generation struct {
-			ID              string `json:"id"`
-			FreshnessHint   string `json:"freshness_hint"`
-			TrustedDeletion bool   `json:"trusted_deletion"`
-		} `json:"generation"`
-		State string `json:"state"`
+	if result.Claim != request.Claim || result.Generation.ID != request.Claim.GenerationID {
+		t.Error("the refusal must echo the host claim and generation")
 	}
-	if err := json.Unmarshal(raw, &decoded); err != nil {
-		t.Fatalf("Unmarshal() error = %v", err)
+	assertHostAccepts(t, result)
+	if !strings.Contains(handled.Detail, "attestation.allow_empty_successor") || !strings.Contains(handled.Detail, "SDK") {
+		t.Errorf("detail = %q, want it to name the option and the SDK limitation", handled.Detail)
 	}
-	if !decoded.Generation.TrustedDeletion || decoded.Generation.ID != testClaim().GenerationID || decoded.Generation.FreshnessHint == "" {
-		t.Errorf("wire generation = %+v, want trusted_deletion with id and freshness hint kept", decoded.Generation)
+	raw, _ := json.Marshal(result)
+	if strings.Contains(string(raw), "trusted_deletion") {
+		t.Errorf("result carries an unpublished wire field: %s", raw)
 	}
-	if strings.Count(string(raw), `"generation":`) != 1 {
-		t.Errorf("wire result has duplicate generation objects: %s", raw)
-	}
-	assertHostAccepts(t, attested.Result)
 }
 
-func TestFailureResultsNeverAttestDeletion(t *testing.T) {
+func TestEmptySuccessorAttestationAbsentAndFalseAreEquivalent(t *testing.T) {
 	t.Parallel()
 
-	site := twoPageSite(t)
-	overrideStatus(site, "/wiki/api/v2/spaces/12345", 503, nil)
-	cfg := testConfig(site)
-	cfg.AllowEmptySuccessor = true
-	outcome := collectOnce(t, site, cfg, testClaim())
-	if outcome.TrustedDeletion {
-		t.Fatal("a retryable failure must never carry the deletion attestation")
+	site := newFakeSite(t)
+	run := func(attestation any) []byte {
+		request := requestFor(site)
+		if attestation != nil {
+			request.Config["attestation"] = attestation
+		}
+		handled, err := Handle(t.Context(), request, HandleOptions{Getenv: envFrom(basicEnv), Clock: fixedClock()})
+		if err != nil {
+			t.Fatalf("Handle() error = %v", err)
+		}
+		if handled.Result.State != sdk.ResultComplete {
+			t.Fatalf("State = %q, want complete", handled.Result.State)
+		}
+		raw, _ := json.Marshal(handled.Result)
+		return raw
+	}
+	absent := run(nil)
+	explicitFalse := run(map[string]any{"allow_empty_successor": false})
+	if !bytes.Equal(absent, explicitFalse) {
+		t.Errorf("absent and false differ:\n%s\n---\n%s", absent, explicitFalse)
+	}
+	if strings.Contains(string(absent), "trusted_deletion") {
+		t.Errorf("an empty snapshot carries trusted_deletion: %s", absent)
 	}
 }
 

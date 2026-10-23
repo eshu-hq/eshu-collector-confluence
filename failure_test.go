@@ -5,6 +5,7 @@ package confluence
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -72,7 +73,7 @@ func TestCollectStatusMapping(t *testing.T) {
 			if outcome.State != tt.wantState {
 				t.Fatalf("State = %q, want %q", outcome.State, tt.wantState)
 			}
-			if got := failureClassOf(t, outcome.Result); got != tt.wantClass {
+			if got := failureClassOf(t, outcome); got != tt.wantClass {
 				t.Errorf("failure class = %q, want %q", got, tt.wantClass)
 			}
 			if len(outcome.Facts) != 0 {
@@ -85,7 +86,7 @@ func TestCollectStatusMapping(t *testing.T) {
 			if tt.wantRetry != 0 && status.RetryAfterSeconds != tt.wantRetry {
 				t.Errorf("RetryAfterSeconds = %d, want %d from Retry-After", status.RetryAfterSeconds, tt.wantRetry)
 			}
-			assertHostAccepts(t, outcome.Result)
+			assertHostAccepts(t, outcome)
 			assertNoCanary(t, outcome)
 		})
 	}
@@ -144,16 +145,16 @@ func TestCollectTransientTransportIsRetryableThenEscalates(t *testing.T) {
 	site.mu.Unlock()
 
 	early := collectOnce(t, site, testConfig(site), testClaim())
-	if early.State != sdk.ResultRetryable || failureClassOf(t, early.Result) != FailureTransport {
-		t.Fatalf("first attempt: state %q class %q, want retryable transport-error", early.State, failureClassOf(t, early.Result))
+	if early.State != sdk.ResultRetryable || failureClassOf(t, early) != FailureTransport {
+		t.Fatalf("first attempt: state %q class %q, want retryable transport-error", early.State, failureClassOf(t, early))
 	}
-	assertHostAccepts(t, early.Result)
+	assertHostAccepts(t, early)
 
 	claim := testClaim()
 	claim.Attempt = 20
 	persistent := collectOnce(t, site, testConfig(site), claim)
-	if persistent.State != sdk.ResultTerminal || failureClassOf(t, persistent.Result) != FailureTransportPersistent {
-		t.Fatalf("attempt 20: state %q class %q, want terminal transport-persistent", persistent.State, failureClassOf(t, persistent.Result))
+	if persistent.State != sdk.ResultTerminal || failureClassOf(t, persistent) != FailureTransportPersistent {
+		t.Fatalf("attempt 20: state %q class %q, want terminal transport-persistent", persistent.State, failureClassOf(t, persistent))
 	}
 }
 
@@ -164,8 +165,8 @@ func TestCollectConnectionRefusedIsRetryable(t *testing.T) {
 	cfg := testConfig(site)
 	site.server.Close() // the port now refuses connections
 	outcome := collectOnce(t, site, cfg, testClaim())
-	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome.Result) != FailureTransport {
-		t.Fatalf("state %q class %q, want retryable transport-error", outcome.State, failureClassOf(t, outcome.Result))
+	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome) != FailureTransport {
+		t.Fatalf("state %q class %q, want retryable transport-error", outcome.State, failureClassOf(t, outcome))
 	}
 	assertNoCanary(t, outcome)
 }
@@ -176,8 +177,8 @@ func TestCollectPageFailureMidWalkIsClassified(t *testing.T) {
 	site := twoPageSite(t)
 	overrideStatus(site, "/wiki/api/v2/pages/1002", 503, nil)
 	outcome := collectOnce(t, site, testConfig(site), testClaim())
-	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome.Result) != FailureProviderUnavailable {
-		t.Fatalf("state %q class %q, want retryable provider-unavailable", outcome.State, failureClassOf(t, outcome.Result))
+	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome) != FailureProviderUnavailable {
+		t.Fatalf("state %q class %q, want retryable provider-unavailable", outcome.State, failureClassOf(t, outcome))
 	}
 	if len(outcome.Facts) != 0 {
 		t.Fatal("a failed read must not emit a partial fact set as complete")
@@ -197,8 +198,8 @@ func TestCollectLowestIndexFailureWinsAmongConcurrentFetches(t *testing.T) {
 	cfg.FetchConcurrency = 4
 	for i := 0; i < 5; i++ {
 		outcome := collectOnce(t, site, cfg, testClaim())
-		if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome.Result) != FailureRateLimited {
-			t.Fatalf("run %d: state %q class %q, want the lower-index 429 to win", i, outcome.State, failureClassOf(t, outcome.Result))
+		if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome) != FailureRateLimited {
+			t.Fatalf("run %d: state %q class %q, want the lower-index 429 to win", i, outcome.State, failureClassOf(t, outcome))
 		}
 	}
 }
@@ -210,8 +211,8 @@ func TestCollectDeadlineAlreadyPassedIsTerminal(t *testing.T) {
 	claim := testClaim()
 	claim.Deadline = testNow().Add(-time.Second)
 	outcome := collectOnce(t, site, testConfig(site), claim)
-	if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome.Result) != FailureDeadline {
-		t.Fatalf("state %q class %q, want terminal claim-deadline-exceeded", outcome.State, failureClassOf(t, outcome.Result))
+	if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome) != FailureDeadline {
+		t.Fatalf("state %q class %q, want terminal claim-deadline-exceeded", outcome.State, failureClassOf(t, outcome))
 	}
 	if len(site.recorded()) != 0 {
 		t.Error("an expired claim must not touch the provider")
@@ -237,8 +238,8 @@ func TestCollectCancellationStopsTheReadAndIsRetryable(t *testing.T) {
 	}()
 	collector := &Collector{Config: testConfig(site), Clock: fixedClock()}
 	outcome := collector.Collect(ctx, testClaim())
-	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome.Result) != FailureDeadline {
-		t.Fatalf("state %q class %q, want retryable claim-deadline-exceeded", outcome.State, failureClassOf(t, outcome.Result))
+	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome) != FailureDeadline {
+		t.Fatalf("state %q class %q, want retryable claim-deadline-exceeded", outcome.State, failureClassOf(t, outcome))
 	}
 }
 
@@ -259,8 +260,8 @@ func TestCollectClaimTimeoutBoundsASlowProvider(t *testing.T) {
 	if time.Since(started) > 5*time.Second {
 		t.Fatal("the claim timeout did not bound the read")
 	}
-	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome.Result) != FailureDeadline {
-		t.Fatalf("state %q class %q, want retryable claim-deadline-exceeded", outcome.State, failureClassOf(t, outcome.Result))
+	if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome) != FailureDeadline {
+		t.Fatalf("state %q class %q, want retryable claim-deadline-exceeded", outcome.State, failureClassOf(t, outcome))
 	}
 }
 
@@ -271,17 +272,17 @@ func TestCollectRejectsAForeignClaim(t *testing.T) {
 	claim := testClaim()
 	claim.CollectorKind = "jira"
 	outcome := collectOnce(t, site, testConfig(site), claim)
-	if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome.Result) != FailureInvalidClaim {
-		t.Fatalf("state %q class %q, want terminal invalid-claim", outcome.State, failureClassOf(t, outcome.Result))
+	if outcome.State != sdk.ResultTerminal || failureClassOf(t, outcome) != FailureInvalidClaim {
+		t.Fatalf("state %q class %q, want terminal invalid-claim", outcome.State, failureClassOf(t, outcome))
 	}
 }
 
 // assertNoCanary proves no credential or provider body reaches any output.
-func assertNoCanary(t *testing.T, outcome Outcome) {
+func assertNoCanary(t *testing.T, outcome sdk.Result) {
 	t.Helper()
-	raw, err := outcome.MarshalJSON()
+	raw, err := json.Marshal(outcome)
 	if err != nil {
-		t.Fatalf("MarshalJSON() error = %v", err)
+		t.Fatalf("Marshal() error = %v", err)
 	}
 	if strings.Contains(string(raw), canaryToken) {
 		t.Fatalf("result leaks a credential or provider body: %s", raw)

@@ -66,8 +66,8 @@ type HandleOptions struct {
 
 // Handled is one served request: the result and what operators need to read.
 type Handled struct {
-	// Outcome is the result to write to stdout.
-	Outcome Outcome
+	// Result is the result to write to stdout.
+	Result sdk.Result
 	// Requests counts provider requests by operation and outcome.
 	Requests map[string]int64
 	// Detail is a short, credential-free reason for a failure result, for the
@@ -93,14 +93,14 @@ func Handle(ctx context.Context, request Request, options HandleOptions) (Handle
 	if err != nil {
 		class := ClassifyConfigError(err)
 		return Handled{
-			Outcome:  Outcome{Result: terminalResult(request.Claim, clock().UTC(), class)},
+			Result:   terminalResult(request.Claim, clock().UTC(), class),
 			Requests: map[string]int64{},
 			Detail:   err.Error(),
 		}, nil
 	}
 	collector := &Collector{Config: config, Client: options.Client, HTTP: options.HTTP, Clock: clock}
-	outcome := collector.Collect(ctx, request.Claim)
-	return Handled{Outcome: outcome, Requests: collector.Requests(), Detail: failureDetail(outcome.Result)}, nil
+	result := collector.Collect(ctx, request.Claim)
+	return Handled{Result: result, Requests: collector.Requests(), Detail: failureDetail(result)}, nil
 }
 
 func failureDetail(result sdk.Result) string {

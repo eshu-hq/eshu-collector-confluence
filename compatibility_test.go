@@ -11,10 +11,9 @@ import (
 )
 
 // supportedCoreRange is the manifest compatibleCore this collector pins,
-// matching the sdk-compatibility row for SDK v0.2.0. The empty-successor
-// attestation needs a core whose result decoder accepts
-// generation.trusted_deletion; until that core is released the range is the
-// SDK row's, and an operator who sets the attestation needs a newer core.
+// matching the sdk-compatibility row for SDK v0.2.0. The collector emits only
+// fields the published SDK v0.2.0 defines, so any core in the range decodes
+// its results.
 const supportedCoreRange = ">=0.0.5 <0.2.0"
 
 // TestCompatibilityMatrixSupportedPair proves the pinned SDK v0.2.0 protocol

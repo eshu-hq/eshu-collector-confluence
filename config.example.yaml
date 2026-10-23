@@ -42,8 +42,9 @@ config:
     api_token_env: ESHU_CONFLUENCE_API_TOKEN
     # bearer_token_env: ESHU_CONFLUENCE_BEARER_TOKEN
   attestation:
-    # Set true only for a space that is legitimately emptied or shrunk: it lets
-    # an empty or sharply smaller snapshot replace the current one.
+    # Maps ESHU_CONFLUENCE_ALLOW_EMPTY_SUCCESSOR. true is refused with the
+    # terminal failure class unsupported_option until a collector SDK release
+    # carries Generation.TrustedDeletion (README, Known gaps). Leave it false.
     allow_empty_successor: false
   limits:
     claim_timeout_seconds: 300

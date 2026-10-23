@@ -38,7 +38,7 @@ lists every intentional difference.
 | `complete` | every page was read and the cursor walk ended | none |
 | `partial` | pages were skipped (unreadable, over `max_page_bytes`, over the result budget) or the walk hit `max_total_pages` | none; `warning_count` counts them |
 | `retryable` | HTTP 429 and 500/502/503/504, a transient transport error, or the claim ran out of time | `rate-limited`, `provider-unavailable`, `transport-error`, `claim-deadline-exceeded` |
-| `terminal` | bad config or credentials, HTTP 401, an unreadable space, an undecodable or oversize response, a transport error that repeated to claim attempt 20 | `invalid-config`, `missing-credentials`, `auth-failed`, `permission-denied`, `invalid-response`, `response-too-large`, `connection-failed`, `untrusted-next-link`, `transport-persistent`, `invalid-claim` |
+| `terminal` | bad config or credentials, HTTP 401, an unreadable space, an undecodable or oversize response, a transport error that repeated to claim attempt 20 | `invalid-config`, `missing-credentials`, `auth-failed`, `permission-denied`, `invalid-response`, `response-too-large`, `connection-failed`, `untrusted-next-link`, `transport-persistent`, `invalid-claim`, `unsupported_option` |
 
 The collector never emits `unchanged`. The host supplies no previous snapshot
 identity across claims, so the collector cannot prove a snapshot unchanged.
@@ -64,9 +64,11 @@ typo cannot silently drop a bound.
   variables (`email_env` and `api_token_env`, or `bearer_token_env`); the
   defaults are `ESHU_CONFLUENCE_EMAIL`, `ESHU_CONFLUENCE_API_TOKEN`, and
   `ESHU_CONFLUENCE_BEARER_TOKEN`. A bearer token wins over basic auth.
-- `attestation.allow_empty_successor: true` forwards the operator's attestation
-  that an empty or sharply smaller snapshot is legitimate
-  (`generation.trusted_deletion`). It defaults to false.
+- `attestation.allow_empty_successor` maps the in-tree
+  `ESHU_CONFLUENCE_ALLOW_EMPTY_SUCCESSOR` option. Absent and `false` mean no
+  attestation. `true` is **refused**: the claim ends terminal with failure class
+  `unsupported_option`, before any provider request, because the published
+  collector SDK cannot carry the attestation (see Known gaps).
 - The host reads at most `process.stdout_limit_bytes` of stdout per claim
   (4 MiB by default). Raise it for a large space and keep
   `limits.max_result_bytes` below it; pages that do not fit are left out whole
@@ -110,9 +112,13 @@ enabled".
   because they load it without producer-grant context. Installation with
   grants works. `TestPublicHarnessCannotYetJudgeCoreKindManifests` pins this and
   `TestFixturesPassTheHostChecks` runs the checks the host runs at emission.
-- SDK v0.2.0 has no `generation.trusted_deletion`. `Outcome.MarshalJSON` adds it
-  on the wire, only when attested; an attested result needs a core whose result
-  decoder accepts the field.
+- SDK v0.2.0 has no `Generation.TrustedDeletion`; it landed after the tag. The
+  collector does not hand-marshal that unpublished wire field, so a scope that
+  needs an empty or sharply smaller snapshot to replace the current one cannot
+  be served yet: with the option off, the core store's successor guard refuses
+  such a snapshot, as it does for any collector. Removal condition: a collector
+  SDK release that carries `TrustedDeletion`, then set it from the option and
+  delete the refusal in `parseAttestation`.
 - `internal/stableid` and `internal/httpx` are copies of in-tree helpers. Replace
   them with the published eshu-sdk helpers when eshu-hq/eshu#8851 lands.
 

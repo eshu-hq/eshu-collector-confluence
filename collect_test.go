@@ -53,8 +53,8 @@ func TestCollectCompleteSpaceSnapshot(t *testing.T) {
 	if outcome.State != sdk.ResultComplete {
 		t.Fatalf("State = %q, want complete; statuses = %#v", outcome.State, outcome.Statuses)
 	}
-	assertHostAccepts(t, outcome.Result)
-	counts := kindCounts(outcome.Result)
+	assertHostAccepts(t, outcome)
+	counts := kindCounts(outcome)
 	want := map[string]int{FactKindSource: 1, FactKindDocument: 2, FactKindSection: 2, FactKindLink: 4}
 	for kind, n := range want {
 		if counts[kind] != n {
@@ -69,9 +69,6 @@ func TestCollectCompleteSpaceSnapshot(t *testing.T) {
 	}
 	if outcome.Generation.FreshnessHint == "" {
 		t.Error("FreshnessHint is empty; the core store needs it to skip duplicates")
-	}
-	if outcome.TrustedDeletion {
-		t.Error("TrustedDeletion = true without the operator attestation")
 	}
 	for _, fact := range outcome.Facts {
 		ref := fact.SourceRef
@@ -102,7 +99,7 @@ func TestCollectPageTreeScopeReadsRootAndDescendants(t *testing.T) {
 	if outcome.State != sdk.ResultComplete {
 		t.Fatalf("State = %q, want complete", outcome.State)
 	}
-	assertHostAccepts(t, outcome.Result)
+	assertHostAccepts(t, outcome)
 	source := outcome.Facts[0].Payload
 	if source["source_type"] != "confluence_page_tree" {
 		t.Errorf("source_type = %v, want confluence_page_tree", source["source_type"])
@@ -110,8 +107,8 @@ func TestCollectPageTreeScopeReadsRootAndDescendants(t *testing.T) {
 	if source["external_id"] != "12345" {
 		t.Errorf("external_id = %v, want the space id of the first page", source["external_id"])
 	}
-	if kindCounts(outcome.Result)[FactKindDocument] != 2 {
-		t.Errorf("documents = %d, want root plus one descendant", kindCounts(outcome.Result)[FactKindDocument])
+	if kindCounts(outcome)[FactKindDocument] != 2 {
+		t.Errorf("documents = %d, want root plus one descendant", kindCounts(outcome)[FactKindDocument])
 	}
 	for _, request := range site.recorded() {
 		if strings.Contains(request.path, "/spaces/") {
@@ -146,8 +143,8 @@ func TestCollectPaginatesAndRespectsMaxTotalPages(t *testing.T) {
 	cfg.PageLimit = 2
 
 	full := collectOnce(t, site, cfg, testClaim())
-	if full.State != sdk.ResultComplete || kindCounts(full.Result)[FactKindDocument] != 5 {
-		t.Fatalf("paginated read: state %q documents %d, want complete with 5", full.State, kindCounts(full.Result)[FactKindDocument])
+	if full.State != sdk.ResultComplete || kindCounts(full)[FactKindDocument] != 5 {
+		t.Fatalf("paginated read: state %q documents %d, want complete with 5", full.State, kindCounts(full)[FactKindDocument])
 	}
 	listCalls := 0
 	for _, request := range site.recorded() {
@@ -164,8 +161,8 @@ func TestCollectPaginatesAndRespectsMaxTotalPages(t *testing.T) {
 	if capped.State != sdk.ResultPartial {
 		t.Fatalf("capped read: state = %q, want partial", capped.State)
 	}
-	assertHostAccepts(t, capped.Result)
-	if got := kindCounts(capped.Result)[FactKindDocument]; got != 3 {
+	assertHostAccepts(t, capped)
+	if got := kindCounts(capped)[FactKindDocument]; got != 3 {
 		t.Errorf("capped documents = %d, want 3", got)
 	}
 	metadata := capped.Facts[0].Payload["source_metadata"].(map[string]any)
@@ -199,8 +196,8 @@ func TestCollectSkipsUnreadablePageAsPartial(t *testing.T) {
 	if outcome.State != sdk.ResultPartial {
 		t.Fatalf("State = %q, want partial", outcome.State)
 	}
-	assertHostAccepts(t, outcome.Result)
-	if got := kindCounts(outcome.Result)[FactKindDocument]; got != 1 {
+	assertHostAccepts(t, outcome)
+	if got := kindCounts(outcome)[FactKindDocument]; got != 1 {
 		t.Errorf("documents = %d, want only the readable page", got)
 	}
 	metadata := outcome.Facts[0].Payload["source_metadata"].(map[string]any)
@@ -240,12 +237,9 @@ func TestCollectEmptySpaceEmitsOnlyTheSourceFact(t *testing.T) {
 	if outcome.State != sdk.ResultComplete {
 		t.Fatalf("State = %q, want complete for an empty space", outcome.State)
 	}
-	assertHostAccepts(t, outcome.Result)
+	assertHostAccepts(t, outcome)
 	if len(outcome.Facts) != 1 || outcome.Facts[0].Kind != FactKindSource {
 		t.Fatalf("facts = %d, want exactly the source fact", len(outcome.Facts))
-	}
-	if outcome.TrustedDeletion {
-		t.Error("an empty successor must not be attested unless the operator says so")
 	}
 }
 
@@ -261,7 +255,7 @@ func TestCollectLatestCurrentVersionWins(t *testing.T) {
 	site.pages["4002"] = Page{ID: "4002", Status: "trashed", Title: "Gone", SpaceID: "12345", Version: PageVersion{Number: 9}}
 	site.mu.Unlock()
 	outcome := collectOnce(t, site, testConfig(site), testClaim())
-	if got := kindCounts(outcome.Result)[FactKindDocument]; got != 1 {
+	if got := kindCounts(outcome)[FactKindDocument]; got != 1 {
 		t.Fatalf("documents = %d, want only the current page", got)
 	}
 	var document map[string]any

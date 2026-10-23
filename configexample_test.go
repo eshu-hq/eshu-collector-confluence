@@ -55,7 +55,7 @@ func TestConfigExampleIsALoadableActivation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseConfig(config.example.yaml) error = %v", err)
 	}
-	if cfg.SpaceID != "12345" || cfg.AllowEmptySuccessor || cfg.BaseURL == "" {
+	if cfg.SpaceID != "12345" || cfg.BaseURL == "" {
 		t.Errorf("config = %+v", cfg)
 	}
 	if file.Host.SourceSystem != SourceSystem || file.Host.Scope.Kind != "documentation_source" ||

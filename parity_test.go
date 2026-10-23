@@ -164,19 +164,18 @@ func scenarioNames(t *testing.T) []string {
 
 func (s recordedScenario) config(concurrency int) Config {
 	return Config{
-		BaseURL:             s.Config.BaseURL,
-		SpaceID:             s.Config.SpaceID,
-		RootPageID:          s.Config.RootPageID,
-		SpaceKey:            s.Config.SpaceKey,
-		PageLimit:           s.Config.PageLimit,
-		MaxTotalPages:       s.Config.MaxTotalPages,
-		AllowEmptySuccessor: s.Config.AllowEmptySuccessor,
-		Credentials:         Credentials{Email: "bot@example.invalid", APIToken: canaryToken},
-		ClaimTimeout:        time.Minute,
-		FetchConcurrency:    concurrency,
-		MaxPageBytes:        defaultMaxPageBytes,
-		MaxResultBytes:      defaultMaxResultBytes,
-		MaxResponseBytes:    defaultMaxResponseBytes,
+		BaseURL:          s.Config.BaseURL,
+		SpaceID:          s.Config.SpaceID,
+		RootPageID:       s.Config.RootPageID,
+		SpaceKey:         s.Config.SpaceKey,
+		PageLimit:        s.Config.PageLimit,
+		MaxTotalPages:    s.Config.MaxTotalPages,
+		Credentials:      Credentials{Email: "bot@example.invalid", APIToken: canaryToken},
+		ClaimTimeout:     time.Minute,
+		FetchConcurrency: concurrency,
+		MaxPageBytes:     defaultMaxPageBytes,
+		MaxResultBytes:   defaultMaxResultBytes,
+		MaxResponseBytes: defaultMaxResponseBytes,
 	}
 }
 
@@ -204,6 +203,10 @@ func TestParityWithTheInTreeCollector(t *testing.T) {
 				t.Parallel()
 				scenario, transport := loadScenario(t, name)
 				want := loadGolden(t, name)
+				if scenario.Config.AllowEmptySuccessor {
+					assertAttestationRefused(t, scenario, want)
+					return
+				}
 				claim := testClaim()
 				if want.Scope.ID != "" {
 					claim.Scope.ID = want.Scope.ID
@@ -234,9 +237,9 @@ func TestParityWithTheInTreeCollector(t *testing.T) {
 	}
 }
 
-func assertCollectedParity(t *testing.T, got Outcome, want golden, claim sdk.Claim) {
+func assertCollectedParity(t *testing.T, got sdk.Result, want golden, claim sdk.Claim) {
 	t.Helper()
-	assertHostAccepts(t, got.Result)
+	assertHostAccepts(t, got)
 
 	wantPartial := false
 	for _, fact := range want.Facts {
@@ -263,9 +266,6 @@ func assertCollectedParity(t *testing.T, got Outcome, want golden, claim sdk.Cla
 	}
 	if got.Generation.ID != claim.GenerationID {
 		t.Errorf("generation id = %q, want the host claim generation (the in-tree id is content-addressed; see testdata/README.md)", got.Generation.ID)
-	}
-	if got.TrustedDeletion != want.Generation.TrustedDeletion {
-		t.Errorf("TrustedDeletion = %v, want %v", got.TrustedDeletion, want.Generation.TrustedDeletion)
 	}
 	if want.Generation.TriggerKind != "snapshot" {
 		t.Errorf("golden trigger kind = %q, want snapshot", want.Generation.TriggerKind)
@@ -327,12 +327,12 @@ func assertSameRequests(t *testing.T, transport *fixtureTransport, want golden) 
 	}
 }
 
-func assertRetryParity(t *testing.T, got Outcome, want golden) {
+func assertRetryParity(t *testing.T, got sdk.Result, want golden) {
 	t.Helper()
 	if got.State != sdk.ResultRetryable {
 		t.Fatalf("State = %q, want retryable where the in-tree collector schedules a retry", got.State)
 	}
-	assertHostAccepts(t, got.Result)
+	assertHostAccepts(t, got)
 	seconds := got.Statuses[0].RetryAfterSeconds
 	if want.RetryAfterSeconds >= 5 {
 		// A provider Retry-After is honored exactly.
@@ -362,16 +362,16 @@ var errorMapping = map[string]struct {
 	"error-server-500":      {sdk.ResultRetryable, FailureProviderUnavailable},
 }
 
-func assertErrorParity(t *testing.T, name string, got Outcome, want golden) {
+func assertErrorParity(t *testing.T, name string, got sdk.Result, want golden) {
 	t.Helper()
 	expected, ok := errorMapping[name]
 	if !ok {
 		t.Fatalf("scenario %s has no documented error mapping (in-tree error %q)", name, want.Error)
 	}
-	if got.State != expected.state || failureClassOf(t, got.Result) != expected.class {
-		t.Errorf("state %q class %q, want %q %q", got.State, failureClassOf(t, got.Result), expected.state, expected.class)
+	if got.State != expected.state || failureClassOf(t, got) != expected.class {
+		t.Errorf("state %q class %q, want %q %q", got.State, failureClassOf(t, got), expected.state, expected.class)
 	}
-	assertHostAccepts(t, got.Result)
+	assertHostAccepts(t, got)
 }
 
 func mustJSON(value any) string {
@@ -380,4 +380,33 @@ func mustJSON(value any) string {
 		return err.Error()
 	}
 	return string(raw)
+}
+
+// assertAttestationRefused covers the one scenario whose in-tree run attested
+// an empty successor. The published SDK cannot carry that attestation, so this
+// collector refuses the option instead of emitting the facts without it. The
+// scenario's facts equal space-empty's, which the parity run already proves.
+func assertAttestationRefused(t *testing.T, scenario recordedScenario, want golden) {
+	t.Helper()
+	if !want.Generation.TrustedDeletion {
+		t.Fatal("the golden for an attested scenario must record trusted_deletion")
+	}
+	handled, err := Handle(t.Context(), Request{
+		ProtocolVersion: sdk.ProtocolVersionV1Alpha1,
+		Claim:           testClaim(),
+		Contract:        Contract(),
+		Config: map[string]any{
+			"source": map[string]any{
+				"base_url": scenario.Config.BaseURL,
+				"space_id": scenario.Config.SpaceID,
+			},
+			"attestation": map[string]any{"allow_empty_successor": true},
+		},
+	}, HandleOptions{Getenv: envFrom(basicEnv), Clock: fixedClock()})
+	if err != nil {
+		t.Fatalf("Handle() error = %v", err)
+	}
+	if handled.Result.State != sdk.ResultTerminal || failureClassOf(t, handled.Result) != FailureUnsupportedOption {
+		t.Errorf("state %q class %q, want terminal unsupported_option", handled.Result.State, failureClassOf(t, handled.Result))
+	}
 }

@@ -52,10 +52,6 @@ type Config struct {
 	PageLimit int
 	// MaxTotalPages caps pages assembled across one cursor walk.
 	MaxTotalPages int
-	// AllowEmptySuccessor is the operator attestation that an empty or sharply
-	// shrunken successor generation is legitimate. It becomes the result's
-	// TrustedDeletion and defaults to false.
-	AllowEmptySuccessor bool
 	// Credentials holds the resolved read-only credentials.
 	Credentials Credentials
 	// ClaimTimeout bounds one claim's wall time.
@@ -132,7 +128,7 @@ func ParseConfig(raw map[string]any, getenv func(string) string) (Config, error)
 	if err := parseLimits(&cfg, raw); err != nil {
 		return Config{}, err
 	}
-	if err := parseAttestation(&cfg, raw); err != nil {
+	if err := parseAttestation(raw); err != nil {
 		return Config{}, err
 	}
 	return cfg, resolveCredentials(&cfg, raw, getenv)
@@ -212,7 +208,17 @@ func parseLimits(cfg *Config, raw map[string]any) error {
 	return nil
 }
 
-func parseAttestation(cfg *Config, raw map[string]any) error {
+// parseAttestation reads attestation.allow_empty_successor. The in-tree
+// option attests that an empty or sharply shrunken successor generation is
+// legitimate, which the host receives as generation.trusted_deletion. The
+// published collector SDK (v0.2.0) has no such field, and this collector does
+// not marshal unpublished wire fields, so true fails closed with a terminal
+// unsupported_option instead of being ignored. Absent and false behave the
+// same: no attestation.
+//
+// Remove the refusal when a collector SDK release carries
+// Generation.TrustedDeletion and this module depends on it.
+func parseAttestation(raw map[string]any) error {
 	attestation, err := section(raw, "attestation")
 	if err != nil {
 		return err
@@ -228,7 +234,13 @@ func parseAttestation(cfg *Config, raw map[string]any) error {
 	if !ok {
 		return invalid("attestation.allow_empty_successor must be a boolean")
 	}
-	cfg.AllowEmptySuccessor = allowed
+	if allowed {
+		return configError{
+			class: FailureUnsupportedOption,
+			message: "attestation.allow_empty_successor is not supported: the published collector SDK " +
+				"has no generation.trusted_deletion field; remove the option until an SDK release carries it",
+		}
+	}
 	return nil
 }
 

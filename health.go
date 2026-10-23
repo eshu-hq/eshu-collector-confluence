@@ -31,7 +31,7 @@ type Health struct {
 
 // HealthLine summarizes a served claim as one JSON line.
 func HealthLine(handled Handled, elapsed time.Duration) ([]byte, error) {
-	result := handled.Outcome.Result
+	result := handled.Result
 	health := Health{
 		Component:     ComponentID,
 		WorkItemID:    result.Claim.WorkItemID,

@@ -46,17 +46,17 @@ func (c *Collector) Requests() map[string]int64 {
 // claims; the core store skips a duplicate snapshot by its freshness hint.
 // Collect is deterministic for a fixed clock and source, so redelivering the
 // same claim returns a byte-identical result.
-func (c *Collector) Collect(ctx context.Context, claim sdk.Claim) Outcome {
+func (c *Collector) Collect(ctx context.Context, claim sdk.Claim) sdk.Result {
 	clock := c.Clock
 	if clock == nil {
 		clock = time.Now
 	}
 	startedAt := clock().UTC()
 	if !claim.Deadline.IsZero() && startedAt.After(claim.Deadline) {
-		return Outcome{Result: terminalResult(claim, startedAt, FailureDeadline)}
+		return terminalResult(claim, startedAt, FailureDeadline)
 	}
 	if claim.CollectorKind != CollectorKind || claim.ComponentID != ComponentID {
-		return Outcome{Result: terminalResult(claim, startedAt, FailureInvalidClaim)}
+		return terminalResult(claim, startedAt, FailureInvalidClaim)
 	}
 
 	timeout := c.Config.ClaimTimeout
@@ -70,16 +70,16 @@ func (c *Collector) Collect(ctx context.Context, claim sdk.Claim) Outcome {
 
 	client, err := c.client(clock)
 	if err != nil {
-		return Outcome{Result: terminalResult(claim, startedAt, FailureInvalidConfig)}
+		return terminalResult(claim, startedAt, FailureInvalidConfig)
 	}
 	snap, err := readSnapshot(runCtx, client, c.Config)
 	if err != nil {
-		return Outcome{Result: c.failure(claim, startedAt, err)}
+		return c.failure(claim, startedAt, err)
 	}
 	builder := factBuilder{claim: claim, cfg: c.Config, observedAt: startedAt}
 	built, err := builder.assemble(runCtx, snap)
 	if err != nil {
-		return Outcome{Result: c.failure(claim, startedAt, err)}
+		return c.failure(claim, startedAt, err)
 	}
 	return c.success(claim, startedAt, clock().UTC(), built)
 }
@@ -102,7 +102,7 @@ func (c *Collector) client(clock func() time.Time) (Client, error) {
 	return built, nil
 }
 
-func (c *Collector) success(claim sdk.Claim, observedAt, finishedAt time.Time, built assembled) Outcome {
+func (c *Collector) success(claim sdk.Claim, observedAt, finishedAt time.Time, built assembled) sdk.Result {
 	state := sdk.ResultComplete
 	status := sdk.Status{
 		Class:           sdk.StatusComplete,
@@ -123,7 +123,7 @@ func (c *Collector) success(claim sdk.Claim, observedAt, finishedAt time.Time, b
 	result.Generation.FreshnessHint = freshnessHint(built.facts)
 	result.Facts = built.facts
 	result.Statuses = []sdk.Status{status}
-	return Outcome{Result: result, TrustedDeletion: c.Config.AllowEmptySuccessor}
+	return result
 }
 
 // failure maps a read or build error onto a retryable or terminal result.
