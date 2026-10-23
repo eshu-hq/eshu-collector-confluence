@@ -57,6 +57,28 @@ poll.
 Errors, statuses, and logs carry only a class, a status code, and counts. They
 never carry a token, URL, page id, title, or provider body.
 
+## What operators see
+
+The extension host buffers a collector process's stderr and records only its
+size (`stderr_bytes`) in a launch failure. It is never logged or stored. The
+operator signal is therefore the SDK status rows the host records for each
+claim, and each row carries everything this collector reports:
+
+| Row | Fields |
+| --- | --- |
+| complete or partial | `fact_count`, `source_latency_ms`, and for a partial snapshot `partial` and `warning_count` (skipped pages, plus one when the walk hit `max_total_pages`) |
+| retryable or terminal | `failure_class`, `retry_after_seconds` (retryable), and `source_latency_ms` (how long the claim ran before it failed) |
+
+`failure_class` is a bounded token from the table above. `unsupported_option`
+means the activation set `attestation.allow_empty_successor: true`, the only
+option the collector refuses (see Known gaps). `invalid-config` and
+`missing-credentials` are rejected before any provider request.
+
+The binary also writes a `collector health` JSON line and, for a failure, a
+`collector detail` line to stderr (request counts by operation and outcome, the
+exact config problem). They are a debug aid for running the binary by hand; the
+host does not surface them. No metrics or traces are emitted (see Known gaps).
+
 ## Configuration
 
 Copy [config.example.yaml](config.example.yaml). It is the component activation
@@ -153,6 +175,10 @@ Check these on the QA activation before the in-tree collector is removed:
   such a snapshot, as it does for any collector. Removal condition: a collector
   SDK release that carries `TrustedDeletion`, then set it from the option and
   delete the refusal in `parseAttestation`.
+- No OTEL metrics or traces. The manifest declares the metric prefix
+  `eshu_dp_confluence_collector_`, but SDK v0.2.0 gives an out-of-process
+  collector no telemetry channel beyond the status rows, so nothing emits it.
+  The in-tree Confluence metrics have no equivalent yet.
 - `internal/stableid` and `internal/httpx` are copies of in-tree helpers. Replace
   them with the published eshu-sdk helpers when eshu-hq/eshu#8851 lands.
 

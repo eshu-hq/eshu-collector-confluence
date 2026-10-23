@@ -55,7 +55,10 @@ func run(
 }
 
 // runStdio serves one request. The result is the only thing written to stdout;
-// the health line goes to stderr and carries no credential or provider data.
+// the health and detail lines go to stderr and carry no credential or provider
+// data. The extension host buffers stderr and reports only its size, so these
+// lines are a debug aid for local runs: operators read the status rows in the
+// result.
 func runStdio(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer, getenv func(string) string) error {
 	request, err := confluence.DecodeRequest(stdin)
 	if err != nil {

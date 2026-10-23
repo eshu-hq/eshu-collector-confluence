@@ -10,11 +10,14 @@ import (
 	sdk "github.com/eshu-hq/eshu/sdk/go/collector"
 )
 
-// Health is the operator-visible summary of one served claim. It is written as
-// one JSON line on stderr so a 3 AM operator can answer: did the claim run,
-// what state did it end in, what failed, how fresh is the evidence, and what
-// did it cost. Every field is a count, a bounded class, or an opaque hash: it
-// never carries a URL, page id, title, body, token, or provider response.
+// Health is a debug summary of one served claim, written as one JSON line on
+// stderr. It is NOT the operator signal: the extension host buffers a
+// process's stderr and reports only its size (stderr_bytes), so operators do
+// not see this line. It helps in a local run of the binary. What operators read
+// is the SDK status rows in the result (state, failure class, retry hint, fact
+// and warning counts, source latency). Every field here is a count, a bounded
+// class, or an opaque hash: it never carries a URL, page id, title, body,
+// token, or provider response.
 type Health struct {
 	Component     string           `json:"component"`
 	WorkItemID    string           `json:"work_item_id"`

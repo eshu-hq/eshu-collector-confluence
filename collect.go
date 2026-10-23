@@ -30,7 +30,7 @@ type Collector struct {
 }
 
 // Requests returns provider request counts by operation and outcome for the
-// last Collect call, for the operator health line. It holds no URL or id.
+// last Collect call, for the stderr debug line. It holds no URL or id.
 func (c *Collector) Requests() map[string]int64 {
 	if c.stats == nil {
 		return map[string]int64{}
@@ -50,6 +50,31 @@ func (c *Collector) Collect(ctx context.Context, claim sdk.Claim) sdk.Result {
 		clock = time.Now
 	}
 	startedAt := clock().UTC()
+	result := c.collect(ctx, claim, clock, startedAt)
+	return stampFailureLatency(result, startedAt, clock().UTC())
+}
+
+// stampFailureLatency records on a failure status row how long the claim ran.
+// The host keeps only the SDK status rows, so a retryable or terminal row must
+// carry the same latency a complete row does: it is how an operator tells a
+// provider that failed at once from a read that ran into the claim deadline.
+func stampFailureLatency(result sdk.Result, startedAt, finishedAt time.Time) sdk.Result {
+	latency := int(finishedAt.Sub(startedAt) / time.Millisecond)
+	if latency <= 0 {
+		return result
+	}
+	statuses := make([]sdk.Status, len(result.Statuses))
+	copy(statuses, result.Statuses)
+	for i := range statuses {
+		if statuses[i].Class == sdk.StatusFailure && statuses[i].SourceLatencyMS == 0 {
+			statuses[i].SourceLatencyMS = latency
+		}
+	}
+	result.Statuses = statuses
+	return result
+}
+
+func (c *Collector) collect(ctx context.Context, claim sdk.Claim, clock func() time.Time, startedAt time.Time) sdk.Result {
 	if claim.CollectorKind != CollectorKind || claim.ComponentID != ComponentID {
 		return terminalResult(claim, startedAt, FailureInvalidClaim)
 	}

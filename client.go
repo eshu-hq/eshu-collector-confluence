@@ -416,7 +416,7 @@ func statusClass(status int) string {
 }
 
 // requestStats counts provider requests by bounded operation and outcome. It
-// feeds the per-claim health line operators read; it carries no URL or id.
+// feeds the per-claim stderr debug line; it carries no URL or id.
 // Workers call record concurrently, so it is mutex-guarded.
 type requestStats struct {
 	mu     sync.Mutex

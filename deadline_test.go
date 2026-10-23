@@ -20,6 +20,8 @@ type deadlineProbe struct {
 	mu       sync.Mutex
 	deadline time.Time
 	seen     bool
+	// err is what every read returns; nil means errProbeDone.
+	err error
 }
 
 var errProbeDone = errors.New("probe done")
@@ -28,19 +30,26 @@ func (p *deadlineProbe) GetSpace(ctx context.Context, _ string) (Space, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.deadline, p.seen = ctx.Deadline()
-	return Space{}, errProbeDone
+	return Space{}, p.fail()
+}
+
+func (p *deadlineProbe) fail() error {
+	if p.err != nil {
+		return p.err
+	}
+	return errProbeDone
 }
 
 func (p *deadlineProbe) ListSpacePages(context.Context, string, int, int) ([]Page, bool, error) {
-	return nil, false, errProbeDone
+	return nil, false, p.fail()
 }
 
 func (p *deadlineProbe) ListPageTree(context.Context, string, int, int) ([]string, bool, error) {
-	return nil, false, errProbeDone
+	return nil, false, p.fail()
 }
 
 func (p *deadlineProbe) GetPage(context.Context, string) (Page, error) {
-	return Page{}, errProbeDone
+	return Page{}, p.fail()
 }
 
 // readDeadline runs Collect with a fixed clock so the claim's remaining time is
@@ -144,5 +153,76 @@ func TestDeadlineMargin(t *testing.T) {
 		if got := deadlineMargin(tt.remaining); got != tt.want {
 			t.Errorf("deadlineMargin(%v) = %v, want %v", tt.remaining, got, tt.want)
 		}
+	}
+}
+
+// steppingClock advances by step on every reading, so the elapsed time Collect
+// measures is a known number of milliseconds.
+func steppingClock(step time.Duration) func() time.Time {
+	var mu sync.Mutex
+	now := testNow()
+	return func() time.Time {
+		mu.Lock()
+		defer mu.Unlock()
+		reading := now
+		now = now.Add(step)
+		return reading
+	}
+}
+
+// TestFailureStatusRowsCarryTheSourceLatency covers the operator signal. The
+// host keeps only the SDK status rows (it buffers stderr and reports its size),
+// so a retryable or terminal row must say how long the claim ran before it
+// failed, the same field the success row carries.
+func TestFailureStatusRowsCarryTheSourceLatency(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		err       error
+		wantState sdk.ResultState
+		wantClass string
+	}{
+		"retryable provider outage": {
+			err:       providerError{class: FailureProviderUnavailable, retryable: true, statusCode: 503},
+			wantState: sdk.ResultRetryable, wantClass: FailureProviderUnavailable,
+		},
+		"terminal credential": {
+			err:       providerError{class: FailureAuthFailed, statusCode: 401},
+			wantState: sdk.ResultTerminal, wantClass: FailureAuthFailed,
+		},
+		"claim deadline": {
+			err:       context.DeadlineExceeded,
+			wantState: sdk.ResultRetryable, wantClass: FailureDeadline,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			cfg := Config{SpaceID: "12345", ClaimTimeout: time.Minute, PageLimit: 100, MaxTotalPages: 10, FetchConcurrency: 1}
+			collector := &Collector{Config: cfg, Client: &deadlineProbe{err: tt.err}, Clock: steppingClock(1500 * time.Millisecond)}
+			outcome := collector.Collect(t.Context(), testClaim())
+			if outcome.State != tt.wantState || failureClassOf(t, outcome) != tt.wantClass {
+				t.Fatalf("state %q class %q, want %q %q", outcome.State, failureClassOf(t, outcome), tt.wantState, tt.wantClass)
+			}
+			if got := outcome.Statuses[0].SourceLatencyMS; got != 1500 {
+				t.Errorf("SourceLatencyMS = %d, want 1500", got)
+			}
+			assertHostAccepts(t, outcome)
+		})
+	}
+}
+
+func TestSuccessStatusRowKeepsItsLatencyAndCounts(t *testing.T) {
+	t.Parallel()
+
+	site := twoPageSite(t)
+	collector := &Collector{Config: testConfig(site), Clock: steppingClock(250 * time.Millisecond)}
+	outcome := collector.Collect(t.Context(), testClaim())
+	if outcome.State != sdk.ResultComplete {
+		t.Fatalf("State = %q, want complete", outcome.State)
+	}
+	status := outcome.Statuses[0]
+	if status.SourceLatencyMS <= 0 || status.FactCount != len(outcome.Facts) {
+		t.Errorf("status = %+v, want a latency and the fact count", status)
 	}
 }

@@ -64,14 +64,15 @@ type HandleOptions struct {
 	Client Client
 }
 
-// Handled is one served request: the result and what operators need to read.
+// Handled is one served request: the result and the debug data written to
+// stderr.
 type Handled struct {
 	// Result is the result to write to stdout.
 	Result sdk.Result
 	// Requests counts provider requests by operation and outcome.
 	Requests map[string]int64
 	// Detail is a short, credential-free reason for a failure result, for the
-	// stderr health line. Empty on success.
+	// stderr debug lines (not visible to host operators). Empty on success.
 	Detail string
 }
 
