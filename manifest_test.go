@@ -110,8 +110,15 @@ func TestManifestReleaseProvenance(t *testing.T) {
 			t.Fatalf("fact kind %q lacks schema versions or source confidence", family.Kind)
 		}
 	}
-	if !reflect.DeepEqual(manifest.Spec.ConsumerContracts.Reducer.Phases, []string{conformance.SourceEvidenceOnlyReducerPhase}) {
-		t.Errorf("reducer phases = %v, want only %q", manifest.Spec.ConsumerContracts.Reducer.Phases, conformance.SourceEvidenceOnlyReducerPhase)
+	// The manifest declares no reducer phase. The only phase the public
+	// harness accepts for optional components is source_evidence_only, which
+	// asserts the facts feed no graph truth; that is not accurate for
+	// documentation facts, so the whole consumerContracts block is omitted.
+	if phases := manifest.Spec.ConsumerContracts.Reducer.Phases; len(phases) != 0 {
+		t.Errorf("reducer phases = %v, want none declared", phases)
+	}
+	if bytes.Contains(ManifestYAML, []byte("consumerContracts")) || bytes.Contains(ManifestYAML, []byte("source_evidence_only")) {
+		t.Error("manifest.yaml still mentions consumerContracts or source_evidence_only")
 	}
 }
 

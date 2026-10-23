@@ -41,9 +41,5 @@ spec:
       sourceConfidence:
         - observed
       payloadSchemaRef: documentation_link
-  consumerContracts:
-    reducer:
-      phases:
-        - source_evidence_only:no_graph_truth
   telemetry:
     metricsPrefix: eshu_dp_confluence_collector_
