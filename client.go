@@ -297,7 +297,7 @@ func (c *HTTPClient) transportError(ctx context.Context, err error) error {
 		return ctx.Err()
 	}
 	if httpx.IsTransientTransportError(ctx, err) {
-		return providerError{class: FailureTransport, retryable: true, transport: true, cause: err}
+		return providerError{class: FailureTransport, retryable: true, cause: err}
 	}
 	return providerError{class: FailureConnectionFailed, cause: err}
 }

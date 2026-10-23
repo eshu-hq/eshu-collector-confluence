@@ -73,8 +73,6 @@ const (
 	FailureProviderUnavailable = "provider-unavailable"
 	// FailureTransport marks a transient connection-level failure.
 	FailureTransport = "transport-error"
-	// FailureTransportPersistent marks a transport failure that kept repeating.
-	FailureTransportPersistent = "transport-persistent"
 	// FailureConnectionFailed marks a non-transient connection failure such as
 	// a TLS or DNS-not-found error.
 	FailureConnectionFailed = "connection-failed"

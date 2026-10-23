@@ -11,8 +11,6 @@ import (
 	"time"
 
 	sdk "github.com/eshu-hq/eshu/sdk/go/collector"
-
-	"github.com/eshu-hq/eshu-collector-confluence/internal/httpx"
 )
 
 // Collector reads one claimed Confluence scope and returns one SDK result.
@@ -146,13 +144,12 @@ func (c *Collector) failure(claim sdk.Claim, observedAt time.Time, err error) sd
 	if !provider.retryable {
 		return terminalResult(claim, observedAt, provider.class)
 	}
-	// A transport failure that keeps repeating is persistent misconfiguration
-	// (a wrong host or port, a removed service), not an outage: surface it as
-	// a terminal failure an operator can alert on instead of retrying forever.
-	// claim.Attempt counts the attempts of this work item.
-	if provider.transport && claim.Attempt >= httpx.MaxConsecutiveTransportFailures {
-		return terminalResult(claim, observedAt, FailureTransportPersistent)
-	}
+	// A transport failure stays retryable at every attempt. The extension host
+	// owns the attempt budget (10 in collector-component-extension): it ends a
+	// retrying claim at that attempt and records the class of the last failure,
+	// so a persistent transport failure dead-letters as transport-error. A limit
+	// of this collector's own could not fire first, and claim.Attempt counts
+	// every attempt, not only transport failures.
 	delay := retryDelay(provider.retryAfter, claim.Attempt, retryKey(claim))
 	return retryableResult(claim, observedAt, provider.class, delay)
 }

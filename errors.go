@@ -20,7 +20,6 @@ var ErrPermissionDenied = errors.New("confluence permission denied")
 type providerError struct {
 	class      string
 	retryable  bool
-	transport  bool
 	statusCode int
 	retryAfter time.Duration
 	cause      error

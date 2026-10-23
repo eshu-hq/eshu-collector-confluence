@@ -50,8 +50,9 @@ var transientErrnos = []error{
 // response. The same bare io.EOF from a JSON decoder reading a 200 response with
 // an empty body (a proxy, WAF, or misrouted base URL) is a persistent content
 // problem, not a dropped connection, and returns false; a body cut short
-// mid-response is io.ErrUnexpectedEOF and stays transient. Retries are not
-// unbounded: callers stop after MaxConsecutiveTransportFailures.
+// mid-response is io.ErrUnexpectedEOF and stays transient. The function does
+// not bound retries; the caller (here, the extension host's attempt budget)
+// does.
 func IsTransientTransportError(ctx context.Context, err error) bool {
 	if err == nil {
 		return false
@@ -84,14 +85,6 @@ func IsTransientTransportError(ctx context.Context, err error) bool {
 	}
 	return false
 }
-
-// MaxConsecutiveTransportFailures bounds how long a collector retries the same
-// source through transient transport errors before it treats the failure as
-// persistent and returns it as fatal. A wrong host or port, a removed service,
-// or a permanently blocked network path all surface as connection refused or
-// unreachable forever; without a ceiling that misconfiguration would look like
-// a healthy, idle collector instead of the crash-loop an operator can alert on.
-const MaxConsecutiveTransportFailures = 20
 
 // TransportFailureClass names the cause of a transport error as a bounded,
 // low-cardinality string safe for logs and metric labels: "reset", "refused",

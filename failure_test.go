@@ -125,7 +125,7 @@ func TestCollectBackoffGrowsWithAttemptAndIsDeterministic(t *testing.T) {
 	}
 }
 
-func TestCollectTransientTransportIsRetryableThenEscalates(t *testing.T) {
+func TestCollectTransportFailureStaysRetryableAtEveryAttempt(t *testing.T) {
 	t.Parallel()
 
 	site := twoPageSite(t)
@@ -144,17 +144,18 @@ func TestCollectTransientTransportIsRetryableThenEscalates(t *testing.T) {
 	}
 	site.mu.Unlock()
 
-	early := collectOnce(t, site, testConfig(site), testClaim())
-	if early.State != sdk.ResultRetryable || failureClassOf(t, early) != FailureTransport {
-		t.Fatalf("first attempt: state %q class %q, want retryable transport-error", early.State, failureClassOf(t, early))
-	}
-	assertHostAccepts(t, early)
-
-	claim := testClaim()
-	claim.Attempt = 20
-	persistent := collectOnce(t, site, testConfig(site), claim)
-	if persistent.State != sdk.ResultTerminal || failureClassOf(t, persistent) != FailureTransportPersistent {
-		t.Fatalf("attempt 20: state %q class %q, want terminal transport-persistent", persistent.State, failureClassOf(t, persistent))
+	// The extension host ends a retrying claim at its own attempt budget
+	// (10 in collector-component-extension) and keeps the class of the last
+	// failure, so the collector must keep answering retryable instead of
+	// guessing a limit of its own that the host would never let it reach.
+	for _, attempt := range []int{1, 9, 10, 11, 25} {
+		claim := testClaim()
+		claim.Attempt = attempt
+		outcome := collectOnce(t, site, testConfig(site), claim)
+		if outcome.State != sdk.ResultRetryable || failureClassOf(t, outcome) != FailureTransport {
+			t.Fatalf("attempt %d: state %q class %q, want retryable transport-error", attempt, outcome.State, failureClassOf(t, outcome))
+		}
+		assertHostAccepts(t, outcome)
 	}
 }
 

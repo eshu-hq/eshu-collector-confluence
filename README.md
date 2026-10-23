@@ -38,7 +38,14 @@ lists every intentional difference.
 | `complete` | every page was read and the cursor walk ended | none |
 | `partial` | pages were skipped (unreadable, over `max_page_bytes`, over the result budget) or the walk hit `max_total_pages` | none; `warning_count` counts them |
 | `retryable` | HTTP 429 and 500/502/503/504, a transient transport error, or the claim ran out of time | `rate-limited`, `provider-unavailable`, `transport-error`, `claim-deadline-exceeded` |
-| `terminal` | bad config or credentials, HTTP 401, an unreadable space, an undecodable or oversize response, a transport error that repeated to claim attempt 20 | `invalid-config`, `missing-credentials`, `auth-failed`, `permission-denied`, `invalid-response`, `response-too-large`, `connection-failed`, `untrusted-next-link`, `transport-persistent`, `invalid-claim`, `unsupported_option` |
+| `terminal` | bad config or credentials, HTTP 401, an unreadable space, an undecodable or oversize response | `invalid-config`, `missing-credentials`, `auth-failed`, `permission-denied`, `invalid-response`, `response-too-large`, `connection-failed`, `untrusted-next-link`, `invalid-claim`, `unsupported_option` |
+
+The host owns the retry budget. A retryable result is released for another
+attempt until the claim reaches the host's attempt limit (10 in
+`collector-component-extension`), then the host dead-letters the work item and
+keeps the class of the last failure. A transport failure that never clears
+therefore ends as `transport-error` after 10 attempts; the collector sets no
+limit of its own.
 
 The collector never emits `unchanged`. The host supplies no previous snapshot
 identity across claims, so the collector cannot prove a snapshot unchanged.
