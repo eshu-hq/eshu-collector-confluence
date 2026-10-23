@@ -107,8 +107,9 @@ typo cannot silently drop a bound.
   collector stops starting work a margin before the deadline (5% of the time
   left, at most 2 seconds) and returns a `retryable` result with failure class
   `claim-deadline-exceeded` instead of being killed mid-write. Set the worker
-  lease TTL to at least the in-tree value (5 minutes) for any activation whose
-  space takes longer than about a minute to read; see the acceptance notes.
+  lease TTL to at least 5 minutes in the reference deployment for any
+  activation whose space takes longer than about a minute to read; see the
+  acceptance notes.
 - The host reads at most `process.stdout_limit_bytes` of stdout per claim
   (4 MiB by default). Raise it for a large space and keep
   `limits.max_result_bytes` below it; pages that do not fit are left out whole
@@ -143,9 +144,8 @@ its own digest. Pass the digest-pinned reference the pod runs (`--image-ref`, or
 reference into `artifacts[].image` and refuses anything that is not a
 `name[:port]/path@sha256:<64 hex>` reference (lower-case, no tag, no quote,
 backslash, `$`, or whitespace; one trailing newline is ignored). A refused
-reference exits non-zero and writes nothing. There is no release job or digest
-script in this repository yet: whoever publishes the image reads its digest from
-the registry. The image is always `linux/amd64` (the manifest's platform),
+reference exits non-zero and writes nothing. The release workflow
+prints the digest reference to its job summary (see Releasing). The image is always `linux/amd64` (the manifest's platform),
 whatever the builder is. Installing the seeded manifest still
 needs the four grants and the `eshu-hq` publisher on the allowlist; `eshu
 component enable` is not idempotent, so an init container must tolerate "already
@@ -153,19 +153,52 @@ enabled".
 
 ## Cutover acceptance notes
 
-Check these on the QA activation before the in-tree collector is removed:
+Check these on the reference activation before the in-tree collector is removed:
 
-- **Space read time vs lease TTL.** Measure how long the largest QA space takes
+- **Space read time vs lease TTL.** Measure how long the largest space takes
   to read (the status row's `source_latency_ms`). It must fit inside the worker
   lease TTL minus the deadline margin. A read that does not fit retries with
   `claim-deadline-exceeded` until the host's attempt budget is spent, then
   dead-letters. Raise `ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL` on the worker
-  to at least 5 minutes (the in-tree value) before activating.
-- **Live Confluence Cloud check.** The page URL join (see
-  [testdata/README.md](testdata/README.md)) is inferred from documentation, not
-  confirmed on a live tenant.
+  to at least 5 minutes in the reference deployment before activating.
+- **Live Confluence Cloud check.** Page URLs keep the in-tree rule (resolve
+  `_links.webui` against `_links.base`). On Confluence Cloud that may drop the
+  `/wiki` context path; this is inferred and unconfirmed. Check a few
+  `canonical_uri` values against a live tenant. A fix is a follow-up after
+  cutover (see [testdata/README.md](testdata/README.md)).
 - **Scope id.** `host.scope.id` must equal the in-tree id so read truth
   continues.
+
+## Releasing
+
+Releases are tags. After the change merges, push a `v*` tag (for example
+`v0.1.0`) on the merge commit. `.github/workflows/release.yml` runs only for a
+pushed tag; it re-runs vet and the race tests, builds the `linux/amd64` image,
+pushes `ghcr.io/eshu-hq/eshu-collector-confluence:<tag>`, writes the image
+digest to the job summary, signs the digest with cosign (keyless), and attaches
+a build provenance attestation and an SBOM attestation. It reads no secret but
+`GITHUB_TOKEN`, deploys nothing, and publishes nothing for a pull request or a
+branch push. Bump `metadata.version` in `manifest.yaml` before tagging.
+
+Then:
+
+1. The first publish creates a private package. Make
+   `ghcr.io/eshu-hq/eshu-collector-confluence` **public** in the package
+   settings once; a worker cannot pull a private package without credentials.
+2. Copy the digest reference from the job summary
+   (`ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest>`) into the
+   activation's `seed.image`, and seed with `--image-ref` or
+   `COLLECTOR_IMAGE_REF`.
+3. Verify before use (the workflow ref is the tag that was pushed):
+
+```bash
+cosign verify ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest> \
+  --certificate-identity \
+  https://github.com/eshu-hq/eshu-collector-confluence/.github/workflows/release.yml@refs/tags/v0.1.0 \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify oci://ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest> \
+  -R eshu-hq/eshu-collector-confluence
+```
 
 ## Known gaps
 
