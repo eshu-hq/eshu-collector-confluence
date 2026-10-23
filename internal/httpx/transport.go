@@ -5,9 +5,13 @@
 // collector shares across its client and retry code.
 //
 // Replace this package with the published eshu-sdk helper when
-// eshu-hq/eshu#8851 lands. Until then it is a verbatim copy of the pieces this
-// collector uses from go/internal/collector/sdk (transport.go and the
-// base-URL, default-client, and Retry-After helpers in http.go).
+// eshu-hq/eshu#8851 lands. Until then it is a copy of the pieces this collector
+// uses from go/internal/collector/sdk (transport.go and the base-URL,
+// default-client, and Retry-After helpers in http.go), with two deliberate
+// differences. ParseBaseURL returns the fixed error text "malformed URL"
+// instead of wrapping url.Parse's error, because that error echoes the URL,
+// userinfo included. The MaxConsecutiveTransportFailures constant is gone,
+// because the extension host owns the attempt budget (see the README).
 package httpx
 
 import (

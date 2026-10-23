@@ -96,12 +96,12 @@ func (b factBuilder) assemble(ctx context.Context, snap snapshot) (assembled, er
 func (b factBuilder) sourceID() string { return b.claim.Scope.ID }
 
 func (b factBuilder) sourceFact(space Space, state assembled) (sdk.Fact, error) {
-	externalID := firstNonEmpty(space.ID, b.cfg.SpaceID, b.cfg.RootPageID)
+	externalID := firstNonEmpty(space.ID, b.cfg.RootPageID)
 	payload, err := encodeSource(documentationv1.Source{
 		SourceID:     b.sourceID(),
 		SourceSystem: SourceSystem,
 		ExternalID:   externalID,
-		DisplayName:  strPtr(firstNonEmpty(space.Name, space.Key, b.cfg.SpaceID, b.cfg.RootPageID)),
+		DisplayName:  strPtr(firstNonEmpty(space.Name, space.Key, b.cfg.RootPageID)),
 		BaseURI:      strPtr(b.cfg.BaseURL),
 		SourceType:   strPtr(b.sourceType()),
 		Labels:       nonEmptyStrings(firstNonEmpty(space.Key, b.cfg.SpaceKey)),
