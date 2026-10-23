@@ -82,6 +82,11 @@ any of it fails the test.
 | Multi-space mode | `ESHU_CONFLUENCE_SPACE_IDS` | not supported | One activation per scope. |
 | Truth extraction | optional doctruth extractor | not ported | The in-tree command never wires it. |
 
+## Known open questions
+
+- Confluence Cloud `canonical_uri` may drop the `/wiki` context path (inferred,
+  unconfirmed); tracked as a follow-up after cutover.
+
 ## The generator
 
 ```go
