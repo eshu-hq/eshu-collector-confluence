@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26.5"
-      - run: go test -count=1 -run TestImportBoundaryRejectsCoreAndCrossCollectorImports .
+      - run: go test -count=1 -run 'TestImportBoundary|TestGoMod' .
 
   image:
     runs-on: ubuntu-latest
