@@ -1,0 +1,131 @@
+{
+  "description": "One page returns 403 on detail read: it is skipped and counted, the rest of the space is emitted.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 100,
+    "max_total_pages": 5000
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 200,
+      "body": {
+        "id": "12345",
+        "key": "ENG",
+        "name": "Engineering Handbook"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "body-format=storage&limit=100&status=current",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "1001",
+            "status": "current",
+            "title": "Platform Runbook",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "u-100",
+            "authorId": "u-101",
+            "version": {
+              "number": 3,
+              "createdAt": "2026-09-10T08:00:00.000Z",
+              "authorId": "u-101"
+            },
+            "body": {
+              "storage": {
+                "value": "<h1>Platform Runbook</h1><p>Start with the <a href=\"https://docs.example.invalid/platform/overview\">platform overview</a>, then read <ac:link><ri:page ri:content-id=\"1002\"/><ac:plain-text-link-body><![CDATA[On-call Guide]]></ac:plain-text-link-body></ac:link>.</p><p>Design notes live in <ac:link><ri:page ri:content-title=\"Design Notes\"/></ac:link> and the diagram is <ac:link><ri:attachment ri:filename=\"topology.png\"/></ac:link>.</p><ul><li><ac:link><ri:url ri:value=\"https://status.example.invalid/board\"/><ac:plain-text-link-body>status board</ac:plain-text-link-body></ac:link></li><li><a href=\"mailto:oncall@example.invalid\">page the on-call</a></li></ul>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1001",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "1002",
+            "status": "current",
+            "title": "On-call Guide",
+            "spaceId": "12345",
+            "parentId": "1001",
+            "ownerId": "",
+            "authorId": "u-102",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-12T09:30:00.000Z",
+              "authorId": "u-102"
+            },
+            "body": {
+              "storage": {
+                "value": "<p>Escalate via <a href=\"https://docs.example.invalid/escalation\">escalation</a> or <a href=\"https://docs.example.invalid/escalation\">escalation again</a>.</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1002",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          }
+        ],
+        "_links": {}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1001",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1001",
+        "status": "current",
+        "title": "Platform Runbook",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "u-100",
+        "authorId": "u-101",
+        "version": {
+          "number": 3,
+          "createdAt": "2026-09-10T08:00:00.000Z",
+          "authorId": "u-101"
+        },
+        "body": {
+          "storage": {
+            "value": "<h1>Platform Runbook</h1><p>Start with the <a href=\"https://docs.example.invalid/platform/overview\">platform overview</a>, then read <ac:link><ri:page ri:content-id=\"1002\"/><ac:plain-text-link-body><![CDATA[On-call Guide]]></ac:plain-text-link-body></ac:link>.</p><p>Design notes live in <ac:link><ri:page ri:content-title=\"Design Notes\"/></ac:link> and the diagram is <ac:link><ri:attachment ri:filename=\"topology.png\"/></ac:link>.</p><ul><li><ac:link><ri:url ri:value=\"https://status.example.invalid/board\"/><ac:plain-text-link-body>status board</ac:plain-text-link-body></ac:link></li><li><a href=\"mailto:oncall@example.invalid\">page the on-call</a></li></ul>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1001",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": [
+            {
+              "name": "runbook"
+            },
+            {
+              "name": "platform"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1002",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 403,
+      "body": {
+        "message": "denied"
+      }
+    }
+  ]
+}

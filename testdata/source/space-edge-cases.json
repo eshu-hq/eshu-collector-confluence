@@ -1,0 +1,260 @@
+{
+  "description": "Malformed storage format, empty and missing hrefs, empty body, and every web UI link form (missing, relative with and without links.base, absolute).",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 100,
+    "max_total_pages": 5000
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 200,
+      "body": {
+        "id": "12345",
+        "key": "ENG",
+        "name": "Engineering Handbook"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "body-format=storage&limit=100&status=current",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "5001",
+            "status": "current",
+            "title": "Edge Cases",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-20T00:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>unclosed <b>bold <i>italic <a href=\"https://docs.example.invalid/x?a=1&amp;b=2\">link text with   spaces</a><a href=\"\">empty href</a><a>no href</a><ac:link><ri:page/></ac:link><ac:link><ri:attachment ri:filename=\"\"/></ac:link><ac:link><ri:page ri:content-id=\"77\"/></ac:link><a href=\"/relative/path\">relative</a>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "5002",
+            "status": "current",
+            "title": "Relative Web UI",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-21T00:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>relative</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/5002/Relative"
+            }
+          },
+          {
+            "id": "5003",
+            "status": "current",
+            "title": "Absolute Web UI",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-22T00:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>absolute</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "https://wiki.example.invalid/display/ENG/Absolute",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "5004",
+            "status": "current",
+            "title": "Empty Body",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-23T00:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/5004",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          }
+        ],
+        "_links": {}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/5001",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "5001",
+        "status": "current",
+        "title": "Edge Cases",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-20T00:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>unclosed <b>bold <i>italic <a href=\"https://docs.example.invalid/x?a=1&amp;b=2\">link text with   spaces</a><a href=\"\">empty href</a><a>no href</a><ac:link><ri:page/></ac:link><ac:link><ri:attachment ri:filename=\"\"/></ac:link><ac:link><ri:page ri:content-id=\"77\"/></ac:link><a href=\"/relative/path\">relative</a>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/5002",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "5002",
+        "status": "current",
+        "title": "Relative Web UI",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-21T00:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>relative</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/5002/Relative"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/5003",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "5003",
+        "status": "current",
+        "title": "Absolute Web UI",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-22T00:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>absolute</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "https://wiki.example.invalid/display/ENG/Absolute",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/5004",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "5004",
+        "status": "current",
+        "title": "Empty Body",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-23T00:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/5004",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "error": "get confluence space: confluence permission denied",
+  "outcome": "error",
+  "requests": [
+    "GET /wiki/api/v2/spaces/12345?"
+  ],
+  "scenario": "error-forbidden-space",
+  "source": "go/internal/collector/confluence (Source.Next over the recorded fixture)"
+}

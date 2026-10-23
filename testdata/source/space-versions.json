@@ -1,0 +1,229 @@
+{
+  "description": "A page listed twice at different versions, a draft, and a page with no status: the highest current version of each page wins.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 100,
+    "max_total_pages": 5000
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 200,
+      "body": {
+        "id": "12345",
+        "key": "ENG",
+        "name": "Engineering Handbook"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "body-format=storage&limit=100&status=current",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "2001",
+            "status": "current",
+            "title": "Versioned",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-08-01T00:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>old</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/2001",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "2001",
+            "status": "current",
+            "title": "Versioned",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 2,
+              "createdAt": "2026-08-15T00:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>new <a href=\"https://docs.example.invalid/v2\">v2</a></p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/2001",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "2002",
+            "status": "draft",
+            "title": "Draft",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 4,
+              "createdAt": "2026-09-10T08:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>draft</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/2002",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "2003",
+            "status": "",
+            "title": "No status",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 2,
+              "createdAt": "2026-09-10T08:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>no status field</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/2003",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          }
+        ],
+        "_links": {}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/2001",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "2001",
+        "status": "current",
+        "title": "Versioned",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 2,
+          "createdAt": "2026-08-15T00:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>new <a href=\"https://docs.example.invalid/v2\">v2</a></p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/2001",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/2002",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "2002",
+        "status": "draft",
+        "title": "Draft",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 4,
+          "createdAt": "2026-09-10T08:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>draft</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/2002",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/2003",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "2003",
+        "status": "",
+        "title": "No status",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 2,
+          "createdAt": "2026-09-10T08:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>no status field</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/2003",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    }
+  ]
+}

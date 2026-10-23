@@ -1,0 +1,205 @@
+{
+  "description": "A terminal list page holds more pages than max_total_pages=2: the overflow is dropped and flagged truncated.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 5,
+    "max_total_pages": 2
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 200,
+      "body": {
+        "id": "12345",
+        "key": "ENG",
+        "name": "Engineering Handbook"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "body-format=storage&limit=5&status=current",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "1001",
+            "status": "current",
+            "title": "Page 1",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-02T08:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>Body 1</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1001",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "1002",
+            "status": "current",
+            "title": "Page 2",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-03T08:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>Body 2</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1002",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "1003",
+            "status": "current",
+            "title": "Page 3",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-04T08:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>Body 3</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1003",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          }
+        ],
+        "_links": {}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1001",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1001",
+        "status": "current",
+        "title": "Page 1",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-02T08:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>Body 1</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1001",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1002",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1002",
+        "status": "current",
+        "title": "Page 2",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-03T08:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>Body 2</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1002",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1003",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1003",
+        "status": "current",
+        "title": "Page 3",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-04T08:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>Body 3</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1003",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    }
+  ]
+}

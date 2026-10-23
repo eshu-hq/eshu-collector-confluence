@@ -1,0 +1,417 @@
+{
+  "facts": [
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_document",
+      "payload": {
+        "acl_summary": {
+          "is_partial": true,
+          "partial_reason": "confluence_page_restrictions_not_collected",
+          "source_acl_state": "partial",
+          "visibility": "credential_viewable"
+        },
+        "canonical_uri": "https://confluence.example.invalid/spaces/ENG/pages/5004",
+        "content_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "document_id": "doc:confluence:5004",
+        "document_type": "page",
+        "document_updated_at": "2026-09-23T00:00:00.000Z",
+        "external_id": "5004",
+        "format": "storage",
+        "revision_id": "1",
+        "source_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_metadata": {
+          "author_id": "",
+          "owner_id": "",
+          "space_id": "12345",
+          "status": "current"
+        },
+        "title": "Empty Body"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "4b5e6f05a25e7ec0b7354a11a40fc88add266713ba1c614ba8394a2a0078fe05",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5004",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/spaces/ENG/pages/5004"
+      },
+      "stable_key": "4b5e6f05a25e7ec0b7354a11a40fc88add266713ba1c614ba8394a2a0078fe05"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_document",
+      "payload": {
+        "acl_summary": {
+          "is_partial": true,
+          "partial_reason": "confluence_page_restrictions_not_collected",
+          "source_acl_state": "partial",
+          "visibility": "credential_viewable"
+        },
+        "canonical_uri": "https://confluence.example.invalid/wiki/api/v2/pages/5001",
+        "content_hash": "sha256:90ec9519da7df13a0bfc73efb8932027b1f0d0bf2a9732a28c59cf74d536242f",
+        "document_id": "doc:confluence:5001",
+        "document_type": "page",
+        "document_updated_at": "2026-09-20T00:00:00.000Z",
+        "external_id": "5001",
+        "format": "storage",
+        "revision_id": "1",
+        "source_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_metadata": {
+          "author_id": "",
+          "owner_id": "",
+          "space_id": "12345",
+          "status": "current"
+        },
+        "title": "Edge Cases"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "58ce53a652fdf6a3fe677a144b3ac7109f901d0d0f67fe467c324172a3b1073a",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5001",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/wiki/api/v2/pages/5001"
+      },
+      "stable_key": "58ce53a652fdf6a3fe677a144b3ac7109f901d0d0f67fe467c324172a3b1073a"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_document",
+      "payload": {
+        "acl_summary": {
+          "is_partial": true,
+          "partial_reason": "confluence_page_restrictions_not_collected",
+          "source_acl_state": "partial",
+          "visibility": "credential_viewable"
+        },
+        "canonical_uri": "https://wiki.example.invalid/display/ENG/Absolute",
+        "content_hash": "sha256:1dc9ffc6d4d3daace06a8312c4c147dbbe84ef281e15e03d6358f54ca7142dbd",
+        "document_id": "doc:confluence:5003",
+        "document_type": "page",
+        "document_updated_at": "2026-09-22T00:00:00.000Z",
+        "external_id": "5003",
+        "format": "storage",
+        "revision_id": "1",
+        "source_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_metadata": {
+          "author_id": "",
+          "owner_id": "",
+          "space_id": "12345",
+          "status": "current"
+        },
+        "title": "Absolute Web UI"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "876063e1b0fe01d853e833957de12ed54b67842efed21deba99fc806fb253ac1",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5003",
+        "source_system": "confluence",
+        "source_uri": "https://wiki.example.invalid/display/ENG/Absolute"
+      },
+      "stable_key": "876063e1b0fe01d853e833957de12ed54b67842efed21deba99fc806fb253ac1"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_document",
+      "payload": {
+        "acl_summary": {
+          "is_partial": true,
+          "partial_reason": "confluence_page_restrictions_not_collected",
+          "source_acl_state": "partial",
+          "visibility": "credential_viewable"
+        },
+        "canonical_uri": "https://confluence.example.invalid/spaces/ENG/pages/5002/Relative",
+        "content_hash": "sha256:b88bfda9ccf8363091fa1dc908848e7af568bc15dcf9ebda00882e2d7d43cb96",
+        "document_id": "doc:confluence:5002",
+        "document_type": "page",
+        "document_updated_at": "2026-09-21T00:00:00.000Z",
+        "external_id": "5002",
+        "format": "storage",
+        "revision_id": "1",
+        "source_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_metadata": {
+          "author_id": "",
+          "owner_id": "",
+          "space_id": "12345",
+          "status": "current"
+        },
+        "title": "Relative Web UI"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "9ed0c776da828bb0a831790f2d9b5e5bb5dc05f36bef996749136ffbe95b89b4",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5002",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/spaces/ENG/pages/5002/Relative"
+      },
+      "stable_key": "9ed0c776da828bb0a831790f2d9b5e5bb5dc05f36bef996749136ffbe95b89b4"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_link",
+      "payload": {
+        "anchor_text_hash": "sha256:b72cf5254a70311c970f6047d9b7a96720034c5bdafd1fc72e872b043f977888",
+        "document_id": "doc:confluence:5001",
+        "link_id": "link:1",
+        "revision_id": "1",
+        "section_id": "body",
+        "target_kind": "external_uri",
+        "target_uri": "https://docs.example.invalid/x?a=1\u0026b=2"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "085ed9191b1346b66e0bde7ecc27fe79d4640e5a54de3467dbfd48c351a55b08",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5001",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/wiki/api/v2/pages/5001"
+      },
+      "stable_key": "085ed9191b1346b66e0bde7ecc27fe79d4640e5a54de3467dbfd48c351a55b08"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_link",
+      "payload": {
+        "anchor_text_hash": "sha256:d2d9e1f13413d3e07064d629ac3341a6e1d6a5eb0895e76a3c66df19307a56f0",
+        "document_id": "doc:confluence:5001",
+        "link_id": "link:3",
+        "revision_id": "1",
+        "section_id": "body",
+        "target_kind": "confluence_reference",
+        "target_uri": "/relative/path"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "6de5fea297397ba04fb304c0c5da831975c7d7239e10caae5b50268aaf0eacad",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5001",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/wiki/api/v2/pages/5001"
+      },
+      "stable_key": "6de5fea297397ba04fb304c0c5da831975c7d7239e10caae5b50268aaf0eacad"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_link",
+      "payload": {
+        "anchor_text_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "document_id": "doc:confluence:5001",
+        "link_id": "link:2",
+        "revision_id": "1",
+        "section_id": "body",
+        "target_kind": "confluence_reference",
+        "target_uri": "confluence:page:77"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "90895d0dce7ddc82c1e68f82a28fbfddd2baf77ea208812acaa7d8e50a360928",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5001",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/wiki/api/v2/pages/5001"
+      },
+      "stable_key": "90895d0dce7ddc82c1e68f82a28fbfddd2baf77ea208812acaa7d8e50a360928"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_section",
+      "payload": {
+        "content_format": "storage",
+        "document_id": "doc:confluence:5004",
+        "excerpt_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "heading_text": "Empty Body",
+        "ordinal_path": [
+          1
+        ],
+        "revision_id": "1",
+        "section_anchor": "body",
+        "section_id": "body",
+        "source_end_ref": "storage:body",
+        "source_metadata": {
+          "source_format": "storage"
+        },
+        "source_start_ref": "storage:body",
+        "text_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "schema_version": "1.1.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "21bfa37e0670458d783ce586d5d459d0b7b3f8b8cb182cc815b5d7c251ca4fc4",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5004",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/spaces/ENG/pages/5004"
+      },
+      "stable_key": "21bfa37e0670458d783ce586d5d459d0b7b3f8b8cb182cc815b5d7c251ca4fc4"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_section",
+      "payload": {
+        "content": "\u003cp\u003eunclosed \u003cb\u003ebold \u003ci\u003eitalic \u003ca href=\"https://docs.example.invalid/x?a=1\u0026amp;b=2\"\u003elink text with   spaces\u003c/a\u003e\u003ca href=\"\"\u003eempty href\u003c/a\u003e\u003ca\u003eno href\u003c/a\u003e\u003cac:link\u003e\u003cri:page/\u003e\u003c/ac:link\u003e\u003cac:link\u003e\u003cri:attachment ri:filename=\"\"/\u003e\u003c/ac:link\u003e\u003cac:link\u003e\u003cri:page ri:content-id=\"77\"/\u003e\u003c/ac:link\u003e\u003ca href=\"/relative/path\"\u003erelative\u003c/a\u003e",
+        "content_format": "storage",
+        "document_id": "doc:confluence:5001",
+        "excerpt_hash": "sha256:4a4333d2b68f53cf264e51b42e3644231444991e8cd5b5d84fa9dfb449e5e2f3",
+        "heading_text": "Edge Cases",
+        "ordinal_path": [
+          1
+        ],
+        "revision_id": "1",
+        "section_anchor": "body",
+        "section_id": "body",
+        "source_end_ref": "storage:body",
+        "source_metadata": {
+          "source_format": "storage"
+        },
+        "source_start_ref": "storage:body",
+        "text_hash": "sha256:90ec9519da7df13a0bfc73efb8932027b1f0d0bf2a9732a28c59cf74d536242f"
+      },
+      "schema_version": "1.1.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "983cd7c5bbe69f79a0b109c3b9b66c43cc71d0b67d0b053af5ae0a85051923dd",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5001",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/wiki/api/v2/pages/5001"
+      },
+      "stable_key": "983cd7c5bbe69f79a0b109c3b9b66c43cc71d0b67d0b053af5ae0a85051923dd"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_section",
+      "payload": {
+        "content": "\u003cp\u003eabsolute\u003c/p\u003e",
+        "content_format": "storage",
+        "document_id": "doc:confluence:5003",
+        "excerpt_hash": "sha256:747355bdc2a224032fd405b1b9e8985bfca47e45b34668f7d0a70ee4789bd855",
+        "heading_text": "Absolute Web UI",
+        "ordinal_path": [
+          1
+        ],
+        "revision_id": "1",
+        "section_anchor": "body",
+        "section_id": "body",
+        "source_end_ref": "storage:body",
+        "source_metadata": {
+          "source_format": "storage"
+        },
+        "source_start_ref": "storage:body",
+        "text_hash": "sha256:1dc9ffc6d4d3daace06a8312c4c147dbbe84ef281e15e03d6358f54ca7142dbd"
+      },
+      "schema_version": "1.1.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "9ddb56b7f32152bb8b160bc620ffc0e4ca89e41ee0ab235f83e080f306da9f3b",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5003",
+        "source_system": "confluence",
+        "source_uri": "https://wiki.example.invalid/display/ENG/Absolute"
+      },
+      "stable_key": "9ddb56b7f32152bb8b160bc620ffc0e4ca89e41ee0ab235f83e080f306da9f3b"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_section",
+      "payload": {
+        "content": "\u003cp\u003erelative\u003c/p\u003e",
+        "content_format": "storage",
+        "document_id": "doc:confluence:5002",
+        "excerpt_hash": "sha256:d2d9e1f13413d3e07064d629ac3341a6e1d6a5eb0895e76a3c66df19307a56f0",
+        "heading_text": "Relative Web UI",
+        "ordinal_path": [
+          1
+        ],
+        "revision_id": "1",
+        "section_anchor": "body",
+        "section_id": "body",
+        "source_end_ref": "storage:body",
+        "source_metadata": {
+          "source_format": "storage"
+        },
+        "source_start_ref": "storage:body",
+        "text_hash": "sha256:b88bfda9ccf8363091fa1dc908848e7af568bc15dcf9ebda00882e2d7d43cb96"
+      },
+      "schema_version": "1.1.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "b7604cae410159c1e687b3bd5fe3a0e82770959ada553b06fabd2681bf137852",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "5002",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/spaces/ENG/pages/5002/Relative"
+      },
+      "stable_key": "b7604cae410159c1e687b3bd5fe3a0e82770959ada553b06fabd2681bf137852"
+    },
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_source",
+      "payload": {
+        "acl_summary": {
+          "is_partial": true,
+          "partial_reason": "confluence_source_restrictions_not_collected",
+          "source_acl_state": "partial",
+          "visibility": "credential_viewable"
+        },
+        "base_uri": "https://confluence.example.invalid/wiki",
+        "display_name": "Engineering Handbook",
+        "external_id": "12345",
+        "labels": [
+          "ENG"
+        ],
+        "source_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_metadata": {
+          "coverage_warning": "complete",
+          "failure_count": "0",
+          "max_total_pages": "5000",
+          "page_count": "4",
+          "sync_status": "complete"
+        },
+        "source_system": "confluence",
+        "source_type": "confluence_space"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "479bc25b9f7b65aa087d95cecd091ffeebff5bc2c40f16bd8d830ca815684e73",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "12345",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/wiki"
+      },
+      "stable_key": "479bc25b9f7b65aa087d95cecd091ffeebff5bc2c40f16bd8d830ca815684e73"
+    }
+  ],
+  "generation": {
+    "freshness_hint": "2026-09-23T00:00:00.000Z",
+    "id": "ef2cca5d6b8fcbb4c6fdc0d15df595ca9cfc3c50af31672d3e63e65d853f763d",
+    "trigger_kind": "snapshot",
+    "trusted_deletion": false
+  },
+  "outcome": "collected",
+  "requests": [
+    "GET /wiki/api/v2/pages/5001?body-format=storage\u0026include-labels=true\u0026include-version=true",
+    "GET /wiki/api/v2/pages/5002?body-format=storage\u0026include-labels=true\u0026include-version=true",
+    "GET /wiki/api/v2/pages/5003?body-format=storage\u0026include-labels=true\u0026include-version=true",
+    "GET /wiki/api/v2/pages/5004?body-format=storage\u0026include-labels=true\u0026include-version=true",
+    "GET /wiki/api/v2/spaces/12345/pages?body-format=storage\u0026limit=100\u0026status=current",
+    "GET /wiki/api/v2/spaces/12345?"
+  ],
+  "scenario": "space-edge-cases",
+  "scope": {
+    "collector_kind": "documentation",
+    "id": "doc-source:confluence:confluence.example.invalid:12345",
+    "scope_kind": "documentation_source",
+    "source_system": "confluence"
+  },
+  "source": "go/internal/collector/confluence (Source.Next over the recorded fixture)"
+}

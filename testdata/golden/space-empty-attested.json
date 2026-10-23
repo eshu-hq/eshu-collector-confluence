@@ -1,0 +1,61 @@
+{
+  "facts": [
+    {
+      "collector_kind": "documentation",
+      "kind": "documentation_source",
+      "payload": {
+        "acl_summary": {
+          "is_partial": true,
+          "partial_reason": "confluence_source_restrictions_not_collected",
+          "source_acl_state": "partial",
+          "visibility": "credential_viewable"
+        },
+        "base_uri": "https://confluence.example.invalid/wiki",
+        "display_name": "Engineering Handbook",
+        "external_id": "12345",
+        "labels": [
+          "ENG"
+        ],
+        "source_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_metadata": {
+          "coverage_warning": "complete",
+          "failure_count": "0",
+          "max_total_pages": "5000",
+          "page_count": "0",
+          "sync_status": "complete"
+        },
+        "source_system": "confluence",
+        "source_type": "confluence_space"
+      },
+      "schema_version": "1.0.0",
+      "source_confidence": "observed",
+      "source_ref": {
+        "fact_key": "479bc25b9f7b65aa087d95cecd091ffeebff5bc2c40f16bd8d830ca815684e73",
+        "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
+        "source_record_id": "12345",
+        "source_system": "confluence",
+        "source_uri": "https://confluence.example.invalid/wiki"
+      },
+      "stable_key": "479bc25b9f7b65aa087d95cecd091ffeebff5bc2c40f16bd8d830ca815684e73"
+    }
+  ],
+  "generation": {
+    "freshness_hint": "",
+    "id": "2ad6c6438fa14e2d5f04f6b38ed4f7464d86be914ecf8928f565cd67cca77a9a",
+    "trigger_kind": "snapshot",
+    "trusted_deletion": true
+  },
+  "outcome": "collected",
+  "requests": [
+    "GET /wiki/api/v2/spaces/12345/pages?body-format=storage\u0026limit=100\u0026status=current",
+    "GET /wiki/api/v2/spaces/12345?"
+  ],
+  "scenario": "space-empty-attested",
+  "scope": {
+    "collector_kind": "documentation",
+    "id": "doc-source:confluence:confluence.example.invalid:12345",
+    "scope_kind": "documentation_source",
+    "source_system": "confluence"
+  },
+  "source": "go/internal/collector/confluence (Source.Next over the recorded fixture)"
+}

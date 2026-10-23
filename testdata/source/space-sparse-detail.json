@@ -1,0 +1,73 @@
+{
+  "description": "The detail response is empty apart from the id: every missing field is filled from the list entry.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 100,
+    "max_total_pages": 5000
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 200,
+      "body": {
+        "id": "12345",
+        "key": "ENG",
+        "name": "Engineering Handbook"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "body-format=storage&limit=100&status=current",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "4001",
+            "status": "current",
+            "title": "Listed Title",
+            "spaceId": "12345",
+            "parentId": "4000",
+            "ownerId": "u-400",
+            "authorId": "u-401",
+            "version": {
+              "number": 5,
+              "createdAt": "2026-09-01T00:00:00.000Z",
+              "authorId": "u-401"
+            },
+            "body": {
+              "storage": {
+                "value": "<p>listed body <a href=\"https://docs.example.invalid/listed\">l</a></p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/4001",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          }
+        ],
+        "_links": {}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/4001",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "4001",
+        "body": {
+          "storage": {
+            "value": "",
+            "representation": "storage"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "description": "HTTP 429 with Retry-After: 17.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 100,
+    "max_total_pages": 5000
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 429,
+      "headers": {
+        "Retry-After": "17"
+      },
+      "body": {
+        "message": "provider error body"
+      }
+    }
+  ]
+}

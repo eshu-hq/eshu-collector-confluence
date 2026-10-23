@@ -1,0 +1,229 @@
+{
+  "description": "One space, three pages across two list pages: owners, labels, parent link, every link shape, unicode and entities.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 2,
+    "max_total_pages": 5000
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 200,
+      "body": {
+        "id": "12345",
+        "key": "ENG",
+        "name": "Engineering Handbook"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "body-format=storage&limit=2&status=current",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "1001",
+            "status": "current",
+            "title": "Platform Runbook",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "u-100",
+            "authorId": "u-101",
+            "version": {
+              "number": 3,
+              "createdAt": "2026-09-10T08:00:00.000Z",
+              "authorId": "u-101"
+            },
+            "body": {
+              "storage": {
+                "value": "<h1>Platform Runbook</h1><p>Start with the <a href=\"https://docs.example.invalid/platform/overview\">platform overview</a>, then read <ac:link><ri:page ri:content-id=\"1002\"/><ac:plain-text-link-body><![CDATA[On-call Guide]]></ac:plain-text-link-body></ac:link>.</p><p>Design notes live in <ac:link><ri:page ri:content-title=\"Design Notes\"/></ac:link> and the diagram is <ac:link><ri:attachment ri:filename=\"topology.png\"/></ac:link>.</p><ul><li><ac:link><ri:url ri:value=\"https://status.example.invalid/board\"/><ac:plain-text-link-body>status board</ac:plain-text-link-body></ac:link></li><li><a href=\"mailto:oncall@example.invalid\">page the on-call</a></li></ul>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1001",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "1002",
+            "status": "current",
+            "title": "On-call Guide",
+            "spaceId": "12345",
+            "parentId": "1001",
+            "ownerId": "",
+            "authorId": "u-102",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-12T09:30:00.000Z",
+              "authorId": "u-102"
+            },
+            "body": {
+              "storage": {
+                "value": "<p>Escalate via <a href=\"https://docs.example.invalid/escalation\">escalation</a> or <a href=\"https://docs.example.invalid/escalation\">escalation again</a>.</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1002",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          }
+        ],
+        "_links": {
+          "next": "/wiki/api/v2/spaces/12345/pages?cursor=c1&limit=2"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "cursor=c1&limit=2",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "1003",
+            "status": "current",
+            "title": "Unicode — Notes ☃",
+            "spaceId": "12345",
+            "parentId": "1001",
+            "ownerId": "u-103",
+            "authorId": "",
+            "version": {
+              "number": 7,
+              "createdAt": "2026-09-14T10:15:30.123Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>Café &amp; crème &lt;tag&gt; &nbsp;done</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1003",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          }
+        ],
+        "_links": {}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1001",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1001",
+        "status": "current",
+        "title": "Platform Runbook",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "u-100",
+        "authorId": "u-101",
+        "version": {
+          "number": 3,
+          "createdAt": "2026-09-10T08:00:00.000Z",
+          "authorId": "u-101"
+        },
+        "body": {
+          "storage": {
+            "value": "<h1>Platform Runbook</h1><p>Start with the <a href=\"https://docs.example.invalid/platform/overview\">platform overview</a>, then read <ac:link><ri:page ri:content-id=\"1002\"/><ac:plain-text-link-body><![CDATA[On-call Guide]]></ac:plain-text-link-body></ac:link>.</p><p>Design notes live in <ac:link><ri:page ri:content-title=\"Design Notes\"/></ac:link> and the diagram is <ac:link><ri:attachment ri:filename=\"topology.png\"/></ac:link>.</p><ul><li><ac:link><ri:url ri:value=\"https://status.example.invalid/board\"/><ac:plain-text-link-body>status board</ac:plain-text-link-body></ac:link></li><li><a href=\"mailto:oncall@example.invalid\">page the on-call</a></li></ul>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1001",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": [
+            {
+              "name": "runbook"
+            },
+            {
+              "name": "platform"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1002",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1002",
+        "status": "current",
+        "title": "On-call Guide",
+        "spaceId": "12345",
+        "parentId": "1001",
+        "ownerId": "",
+        "authorId": "u-102",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-12T09:30:00.000Z",
+          "authorId": "u-102"
+        },
+        "body": {
+          "storage": {
+            "value": "<p>Escalate via <a href=\"https://docs.example.invalid/escalation\">escalation</a> or <a href=\"https://docs.example.invalid/escalation\">escalation again</a>.</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1002",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1003",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1003",
+        "status": "current",
+        "title": "Unicode — Notes ☃",
+        "spaceId": "12345",
+        "parentId": "1001",
+        "ownerId": "u-103",
+        "authorId": "",
+        "version": {
+          "number": 7,
+          "createdAt": "2026-09-14T10:15:30.123Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>Café &amp; crème &lt;tag&gt; &nbsp;done</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1003",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": [
+            {
+              "name": "notes"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
