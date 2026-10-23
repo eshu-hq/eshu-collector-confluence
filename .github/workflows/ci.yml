@@ -18,6 +18,8 @@ jobs:
           go-version: "1.26.5"
       - run: go build ./...
       - run: go vet ./...
+      - name: go.mod and go.sum are tidy
+        run: go mod tidy -diff
 
   test:
     runs-on: ubuntu-latest
