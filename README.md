@@ -168,11 +168,14 @@ Check these on the reference activation before the in-tree collector is removed:
   `claim-deadline-exceeded` until the host's attempt budget is spent, then
   dead-letters. Raise `ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL` on the worker
   to at least 5 minutes in the reference deployment before activating.
-- **Live Confluence Cloud check.** Page URLs keep the in-tree rule (resolve
-  `_links.webui` against `_links.base`). On Confluence Cloud that may drop the
-  `/wiki` context path; this is inferred and unconfirmed. Check a few
-  `canonical_uri` values against a live tenant. A fix is a follow-up after
-  cutover (see [testdata/README.md](testdata/README.md)).
+- **Live Confluence Cloud check.** Page URLs differ from the in-tree rule on
+  purpose. This collector joins `_links.base` and `_links.webui`, so a Cloud
+  page keeps its `/wiki` context path; the in-tree collector resolved the path
+  against the base and dropped it. The join follows the shape Atlassian
+  documents, not a live read (see [testdata/README.md](testdata/README.md)).
+  Check a few `canonical_uri` values against a live tenant before relying on
+  them. The change moves `canonical_uri` and the freshness hint of every Cloud
+  page, so the first claim after cutover stores a fresh generation.
 - **Scope id.** `host.scope.id` must equal the in-tree id so read truth
   continues.
 

@@ -74,6 +74,7 @@ any of it fails the test.
 | HTTP 500, 502, 504 | fatal error (process exits and restarts) | retryable result | A restart is a retry in effect. The host retries with backoff and dead-letters the work item at its attempt budget (10 in `collector-component-extension`), keeping the class. 429 and 503 behave as before. |
 | Retry timing | in-process backoff state | backoff computed from the claim attempt | Each claim is a fresh process. The jitter key is the claim scope, so a delay can differ by up to one second. |
 | Consecutive transport failures | fatal after 20 in a row | retryable `transport-error` at every attempt | The extension host owns the attempt budget: it ends a retrying claim at attempt 10 and keeps the class of the last failure, so a limit of 20 here could never fire. `claim.Attempt` also counts non-transport attempts, so it is not a count of transport failures. |
+| Page URL (`canonical_uri`, and the `source_ref` URI of every page fact) | `_links.webui` resolved against `_links.base` with RFC 3986 rules, which drops the base path (`https://site/spaces/ENG/pages/1`) | `_links.base` and a root-relative `_links.webui` joined (`https://site/wiki/spaces/ENG/pages/1`); a path that already starts with the base path is not doubled; a scheme-relative `webui` is replaced by the REST URI | See "Page URL source". This changes `canonical_uri` and the freshness hint of every Cloud page, so the first claim after cutover stores a fresh generation. The `source_ref` URI is a label; no request is made to it. |
 | Pagination links | an absolute `_links.next` is followed to any host | followed only on the configured origin | The collector sends credentials with every request. |
 | Provider text | stored as received | NUL removed, invalid UTF-8 replaced | A NUL byte makes the Postgres commit fail forever. |
 | Hostile page links | a credential in a link fails the commit | replaced by the REST URI | The SDK validator rejects the whole result otherwise. |
@@ -82,11 +83,34 @@ any of it fails the test.
 | Multi-space mode | `ESHU_CONFLUENCE_SPACE_IDS` | not supported | One activation per scope. |
 | Truth extraction | optional doctruth extractor | not ported | The in-tree command never wires it. |
 
-## Known open questions
+## Page URL source
 
-- Confluence Cloud `canonical_uri` may drop the `/wiki` context path (inferred,
-  unconfirmed). This is an open question, followed in
-  [eshu-hq/eshu#8913](https://github.com/eshu-hq/eshu/issues/8913).
+Atlassian documents `_links.base` as the site base URL including the context
+path and `_links.webui` as a path that starts with a slash:
+
+- [Confluence Cloud REST API examples](https://developer.atlassian.com/cloud/confluence/rest-api-examples/):
+  responses show `"base": "https://your-domain.atlassian.net/wiki"` with
+  `"webui": "/display/TST/Test+Page"`.
+- [Confluence Cloud REST API v2 OpenAPI spec](https://dac-static.atlassian.com/cloud/confluence/openapi-v2.v3.json):
+  `MultiEntityLinks.base` is "Base url of the Confluence site."; `AbstractPageLinks.webui`
+  is "Web UI link of the content."
+- A [v2 response in the Atlassian developer community](https://community.developer.atlassian.com/t/confluence-v2-smart-links-url-through-api/82805)
+  shows `"webui": "/spaces/SL/embed/475463688"` with a `base` ending in `/wiki`.
+  This is a community post, not normative.
+
+Atlassian does not spell out the join rule. With `base` holding `/wiki` and
+`webui` a root-relative path, only the joined form names the page; RFC
+resolution yields a URL without the context path. `weburi_test.go` pins the
+rule with a table and with `testdata/cloud/page-by-id.json`, a Cloud-shaped
+page response with synthetic values. No live tenant was read: that is
+NOT_CHECKED, and the claim rests on the documented shape
+([eshu-hq/eshu#8913](https://github.com/eshu-hq/eshu/issues/8913)).
+
+`parity_test.go` keeps the goldens as the in-tree collector recorded them. For
+each page whose recorded `webui` is root-relative under a base with a path, it
+asserts the golden holds the in-tree form, then expects the joined form from
+this collector. `TestParityExercisesTheWebUIDifference` fails if the exception
+stops applying.
 
 ## The generator
 

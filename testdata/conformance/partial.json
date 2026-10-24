@@ -21,7 +21,7 @@
   "generation": {
     "id": "component-generation:abc",
     "observed_at": "2026-10-01T12:00:00Z",
-    "freshness_hint": "sha256:2065f6d15ea9264890d6c2916207c62efc0b3ff5639e21a84d36a0bf04ae98c5"
+    "freshness_hint": "sha256:d08ba1dc341f76165289e08d95e09f9cd2aa5804d888d0a522e31f141fde0510"
   },
   "facts": [
     {
@@ -74,7 +74,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "cb84504fe61ff3d83c54f04caab663d9e8d3a43857cfdab412e3bb22517ceaec",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -84,7 +84,7 @@
           "source_acl_state": "partial",
           "visibility": "credential_viewable"
         },
-        "canonical_uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "canonical_uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "content_hash": "sha256:32d750d8dbc42bf2327aee7cb1f6124473c9bfc5d0ab604bb2147d6659502be1",
         "document_id": "doc:confluence:1001",
         "document_type": "page",
@@ -123,7 +123,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "14b16c9352662170fdb4dc4c76dc13574ff6b9f5f57db3a5f3235a494248a5ac",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -157,7 +157,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "9bbc27f0d02f73ee9be7347c3ea4edbb6387e33b73b6a8beea61569c7dedcc1f",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -181,7 +181,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "e8e533d8c5af612372d5bcc06ce6df60eda0e08da0d57541969914ec18d74336",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -205,7 +205,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "3d24add05fa7fce81af6390e5d5649b31a1720be8ee0c103a45cf0a11effaea8",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -229,7 +229,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "153d15b7c4151b125851cb52f6235a6ea2176556c7222c3c6b1971be42ea2ee5",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -253,7 +253,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "fe78d48c537dc3b38732c148cc31be731b4c08273d08694b0b3bbe6ea38ecbaf",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -277,7 +277,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "41dc6226561f20ffe8ced2a2177a2552bbc4e6caaf19d790dd52e767ef32d3eb",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {

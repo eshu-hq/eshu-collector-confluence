@@ -90,7 +90,7 @@ func TestCollectReplacesHostileWebLinksWithTheRESTURI(t *testing.T) {
 	}
 }
 
-func TestCollectRelativeWebLinkResolvesAgainstTheBase(t *testing.T) {
+func TestCollectRelativeWebLinkJoinsTheBase(t *testing.T) {
 	t.Parallel()
 
 	site := newFakeSite(t)
@@ -98,7 +98,7 @@ func TestCollectRelativeWebLinkResolvesAgainstTheBase(t *testing.T) {
 	outcome := collectOnce(t, site, testConfig(site), testClaim())
 	for _, fact := range outcome.Facts {
 		if fact.Kind == FactKindDocument {
-			want := site.server.URL + "/spaces/ENG/pages/7004"
+			want := site.baseURL() + "/spaces/ENG/pages/7004"
 			if got := fact.Payload["canonical_uri"]; got != want {
 				t.Errorf("canonical_uri = %v, want %q", got, want)
 			}
