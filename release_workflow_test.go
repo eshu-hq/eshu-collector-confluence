@@ -189,6 +189,11 @@ func releaseWorkflowViolations(raw []byte) []string {
 	if len(doc.stepsRunning("publish", ghAttestVerify)) == 0 {
 		violations = append(violations, "publish: no gh attestation verify step")
 	}
+	// continue-on-error turns a failed check into a pass, so no step or job may
+	// carry it, whatever its value.
+	if strings.Contains(string(raw), "continue-on-error") {
+		violations = append(violations, "continue-on-error must not appear: a failed check would no longer stop the release")
+	}
 	for _, word := range []string{"kubectl", "helm ", "argocd", "terraform", "aws "} {
 		if strings.Contains(string(raw), word) {
 			violations = append(violations, "looks like a deploy step: "+word)
@@ -249,6 +254,9 @@ func TestReleaseWorkflowGuardCatchesViolations(t *testing.T) {
 		"other platform":         strings.Replace(good, "platforms: linux/amd64", "platforms: linux/arm64", 1),
 		"tag check removed":      strings.Replace(good, tagStepName, "Tag check", 1),
 		"tag not from ref":       strings.Replace(good, "TAG: ${{ github.ref_name }}", "TAG: latest", 1),
+		"verify step advisory":   strings.Replace(good, "      - name: Verify the signature\n", "      - name: Verify the signature\n        continue-on-error: true\n", 1),
+		"tag check advisory":     strings.Replace(good, "      - name: Check the tag matches the manifest version\n", "      - name: Check the tag matches the manifest version\n        continue-on-error: true\n", 1),
+		"publish job advisory":   strings.Replace(good, "  publish:\n", "  publish:\n    continue-on-error: true\n", 1),
 		"publish needs removed":  strings.Replace(good, "    needs: verify\n", "", 1),
 		"publish needs other":    strings.Replace(good, "needs: verify", "needs: [publish]", 1),
 	}
