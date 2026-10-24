@@ -42,6 +42,7 @@ type workflowDoc struct {
 	On          map[string]any `yaml:"on"`
 	Permissions any            `yaml:"permissions"`
 	Jobs        map[string]struct {
+		Needs any            `yaml:"needs"`
 		Steps []workflowStep `yaml:"steps"`
 	} `yaml:"jobs"`
 }
@@ -85,6 +86,35 @@ func signatureCheckViolations(doc workflowDoc) []string {
 		}
 	}
 	return violations
+}
+
+// jobNeeds returns the jobs a job waits for. GitHub Actions accepts a single
+// name or a list, so both YAML shapes are read.
+func (d workflowDoc) jobNeeds(job string) []string {
+	switch needs := d.Jobs[job].Needs.(type) {
+	case string:
+		return []string{needs}
+	case []any:
+		names := make([]string, 0, len(needs))
+		for _, entry := range needs {
+			if name, ok := entry.(string); ok {
+				names = append(names, name)
+			}
+		}
+		return names
+	}
+	return nil
+}
+
+// publishWaitsForVerify reports whether the publish job needs the verify job,
+// which holds the tag check and the tests. Without it, publish runs at once.
+func publishWaitsForVerify(doc workflowDoc) bool {
+	for _, name := range doc.jobNeeds("publish") {
+		if name == "verify" {
+			return true
+		}
+	}
+	return false
 }
 
 // tagCheckViolations reports a verify job that does not compare the pushed tag
@@ -149,6 +179,9 @@ func releaseWorkflowViolations(raw []byte) []string {
 		violations = append(violations, "the image must be built for exactly platforms: linux/amd64, got "+strings.Join(platforms, "|"))
 	}
 	violations = append(violations, tagCheckViolations(doc)...)
+	if !publishWaitsForVerify(doc) {
+		violations = append(violations, "publish: must list verify in needs, so the tag check and tests gate the push")
+	}
 	violations = append(violations, signatureCheckViolations(doc)...)
 	if strings.Contains(string(raw), "-regexp") {
 		violations = append(violations, "verification must not use a certificate regexp")
@@ -216,6 +249,8 @@ func TestReleaseWorkflowGuardCatchesViolations(t *testing.T) {
 		"other platform":         strings.Replace(good, "platforms: linux/amd64", "platforms: linux/arm64", 1),
 		"tag check removed":      strings.Replace(good, tagStepName, "Tag check", 1),
 		"tag not from ref":       strings.Replace(good, "TAG: ${{ github.ref_name }}", "TAG: latest", 1),
+		"publish needs removed":  strings.Replace(good, "    needs: verify\n", "", 1),
+		"publish needs other":    strings.Replace(good, "needs: verify", "needs: [publish]", 1),
 	}
 	if violations := releaseWorkflowViolations([]byte(good)); len(violations) != 0 {
 		t.Fatalf("the real workflow already violates: %v", violations)
@@ -228,5 +263,23 @@ func TestReleaseWorkflowGuardCatchesViolations(t *testing.T) {
 		if len(releaseWorkflowViolations([]byte(mutated))) == 0 {
 			t.Errorf("%s: the guard accepted a workflow that breaks the rules", name)
 		}
+	}
+}
+
+// TestPublishNeedsAcceptsEitherYAMLShape keeps the guard from rejecting a
+// correct workflow that writes needs as a list.
+func TestPublishNeedsAcceptsEitherYAMLShape(t *testing.T) {
+	t.Parallel()
+
+	raw, err := os.ReadFile(".github/workflows/release.yml")
+	if err != nil {
+		t.Fatalf("os.ReadFile(release.yml) error = %v", err)
+	}
+	listed := strings.Replace(string(raw), "needs: verify", "needs: [verify]", 1)
+	if listed == string(raw) {
+		t.Fatal("the planted change did not apply")
+	}
+	if violations := releaseWorkflowViolations([]byte(listed)); len(violations) != 0 {
+		t.Errorf("a list-form needs on verify was rejected: %v", violations)
 	}
 }
