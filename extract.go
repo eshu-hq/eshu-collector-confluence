@@ -177,7 +177,7 @@ func resolveWebUI(baseURL string, page Page) string {
 	}
 	relative, err := url.Parse(page.Links.WebUI)
 	if err != nil {
-		return parsed.String()
+		return ""
 	}
 	if relative.Scheme != "" || relative.Host != "" {
 		return ""
