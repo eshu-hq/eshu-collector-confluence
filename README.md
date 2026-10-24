@@ -228,10 +228,12 @@ gh attestation verify oci://ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<di
 
 ## Known gaps
 
-- `eshu component inspect`, `verify`, and `conform`, and the public SDK
-  conformance harness, reject any manifest that declares core-owned kinds,
-  because they load it without producer-grant context. Installation with
-  grants works. `TestPublicHarnessCannotYetJudgeCoreKindManifests` pins this and
+- `eshu component inspect` and `verify` read the producer grants in the
+  component home since eshu-hq/eshu#8952 and judge this manifest once the four
+  grants are recorded. `eshu component conform` and the public SDK conformance
+  harness still reject it: its four kinds have no dot, and the harness refuses
+  non-namespaced kinds before the host's grants apply (eshu-hq/eshu#8851).
+  `TestPublicHarnessCannotYetJudgeCoreKindManifests` pins this and
   `TestFixturesPassTheHostChecks` runs the checks the host runs at emission.
 - SDK v0.2.0 has no `Generation.TrustedDeletion`; it landed after the tag. The
   collector does not hand-marshal that unpublished wire field, so a scope that
