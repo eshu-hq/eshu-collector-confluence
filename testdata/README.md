@@ -85,7 +85,8 @@ any of it fails the test.
 ## Known open questions
 
 - Confluence Cloud `canonical_uri` may drop the `/wiki` context path (inferred,
-  unconfirmed); tracked as a follow-up after cutover.
+  unconfirmed). This is an open question, followed in
+  [eshu-hq/eshu#8913](https://github.com/eshu-hq/eshu/issues/8913).
 
 ## The generator
 
