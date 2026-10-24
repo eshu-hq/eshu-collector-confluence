@@ -1,0 +1,29 @@
+{
+  "id": "1001",
+  "status": "current",
+  "title": "Platform Runbook",
+  "spaceId": "12345",
+  "parentId": "1000",
+  "authorId": "712020:00000000-0000-0000-0000-000000000001",
+  "ownerId": "712020:00000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-09-01T10:00:00.000Z",
+  "version": {
+    "number": 3,
+    "message": "",
+    "minorEdit": false,
+    "authorId": "712020:00000000-0000-0000-0000-000000000001",
+    "createdAt": "2026-09-10T08:00:00.000Z"
+  },
+  "body": {
+    "storage": {
+      "representation": "storage",
+      "value": "<p>See <a href=\"https://docs.example.invalid/guide\">the guide</a>.</p>"
+    }
+  },
+  "_links": {
+    "webui": "/spaces/ENG/pages/1001/Platform+Runbook",
+    "editui": "/pages/resumedraft.action?draftId=1001",
+    "tinyui": "/x/AgA3",
+    "base": "https://acme.example.invalid/wiki"
+  }
+}

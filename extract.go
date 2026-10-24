@@ -154,6 +154,15 @@ func canonicalURI(baseURL string, page Page) string {
 	return restPageURI(baseURL, page.ID)
 }
 
+// resolveWebUI returns the browsable URL of a page from its `_links`.
+//
+// Atlassian documents Confluence Cloud's `_links.base` as the site URL with the
+// /wiki context path and `_links.webui` as a path that starts with a slash, so
+// the browsable URL is the two joined. Resolving the path against the base with
+// RFC 3986 rules would replace the base path and drop /wiki. An absolute webui
+// is used as is. A scheme-relative or other non-path webui yields "" so the
+// caller falls back to the REST URI. The result is only a label on a fact: no
+// request is made to it.
 func resolveWebUI(baseURL string, page Page) string {
 	if strings.HasPrefix(page.Links.WebUI, "http://") || strings.HasPrefix(page.Links.WebUI, "https://") {
 		return page.Links.WebUI
@@ -168,9 +177,32 @@ func resolveWebUI(baseURL string, page Page) string {
 	}
 	relative, err := url.Parse(page.Links.WebUI)
 	if err != nil {
-		return parsed.String()
+		return ""
 	}
-	return parsed.ResolveReference(relative).String()
+	if relative.Scheme != "" || relative.Host != "" {
+		return ""
+	}
+	rawPath := joinURLPath(parsed.EscapedPath(), relative.EscapedPath())
+	path, err := url.PathUnescape(rawPath)
+	if err != nil {
+		return ""
+	}
+	joined := *parsed
+	joined.Path, joined.RawPath = path, rawPath
+	joined.RawQuery, joined.Fragment, joined.RawFragment = relative.RawQuery, relative.Fragment, relative.RawFragment
+	return joined.String()
+}
+
+// joinURLPath appends the webui path to the base path with one slash between
+// them. A webui path that already starts with the base path, as a whole
+// segment, is not doubled.
+func joinURLPath(basePath, webuiPath string) string {
+	basePath = strings.TrimRight(basePath, "/")
+	rooted := "/" + strings.TrimLeft(webuiPath, "/")
+	if basePath != "" && (rooted == basePath || strings.HasPrefix(rooted, basePath+"/")) {
+		return rooted
+	}
+	return basePath + rooted
 }
 
 func restPageURI(baseURL, pageID string) string {

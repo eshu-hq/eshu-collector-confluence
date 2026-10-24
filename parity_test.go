@@ -223,7 +223,7 @@ func TestParityWithTheInTreeCollector(t *testing.T) {
 				}
 				switch want.Outcome {
 				case "collected":
-					assertCollectedParity(t, got, want, claim)
+					assertCollectedParity(t, got, want, claim, scenario)
 					assertSameRequests(t, transport, want)
 				case "retry_scheduled":
 					assertRetryParity(t, got, want)
@@ -237,7 +237,7 @@ func TestParityWithTheInTreeCollector(t *testing.T) {
 	}
 }
 
-func assertCollectedParity(t *testing.T, got sdk.Result, want golden, claim sdk.Claim) {
+func assertCollectedParity(t *testing.T, got sdk.Result, want golden, claim sdk.Claim, scenario recordedScenario) {
 	t.Helper()
 	assertHostAccepts(t, got)
 
@@ -281,9 +281,14 @@ func assertCollectedParity(t *testing.T, got sdk.Result, want golden, claim sdk.
 		gotFacts[key] = fact
 	}
 	wantKeys := map[string]bool{}
+	fixes := webUIFixes(t, scenario)
 	for _, wantFact := range want.Facts {
 		key := wantFact.Kind + "|" + wantFact.StableKey
 		wantKeys[key] = true
+		if fix, ok := fixes[wantFact.SourceRef.SourceRecordID]; ok && wantFact.Kind != FactKindSource {
+			// Intentional difference: the page URL keeps the base path.
+			wantFact = applyWebUIFix(t, wantFact, fix)
+		}
 		fact, ok := gotFacts[key]
 		if !ok {
 			t.Errorf("missing fact %s (payload %v)", key, wantFact.Payload)

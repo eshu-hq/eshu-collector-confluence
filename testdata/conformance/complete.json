@@ -21,7 +21,7 @@
   "generation": {
     "id": "component-generation:abc",
     "observed_at": "2026-10-01T12:00:00Z",
-    "freshness_hint": "sha256:d4b659f0a56117437ab07db7c27e62f8d1e451df4c5988ac331fe1b2ad22caf6"
+    "freshness_hint": "sha256:922192f3f532adb9d3c93a04f565f3f99815258c1ee41e1513c49624922d8f9d"
   },
   "facts": [
     {
@@ -74,7 +74,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "cb84504fe61ff3d83c54f04caab663d9e8d3a43857cfdab412e3bb22517ceaec",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -84,7 +84,7 @@
           "source_acl_state": "partial",
           "visibility": "credential_viewable"
         },
-        "canonical_uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "canonical_uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "content_hash": "sha256:32d750d8dbc42bf2327aee7cb1f6124473c9bfc5d0ab604bb2147d6659502be1",
         "document_id": "doc:confluence:1001",
         "document_type": "page",
@@ -123,7 +123,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "14b16c9352662170fdb4dc4c76dc13574ff6b9f5f57db3a5f3235a494248a5ac",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -157,7 +157,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "9bbc27f0d02f73ee9be7347c3ea4edbb6387e33b73b6a8beea61569c7dedcc1f",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -181,7 +181,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "e8e533d8c5af612372d5bcc06ce6df60eda0e08da0d57541969914ec18d74336",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -205,7 +205,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "3d24add05fa7fce81af6390e5d5649b31a1720be8ee0c103a45cf0a11effaea8",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -229,7 +229,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "153d15b7c4151b125851cb52f6235a6ea2176556c7222c3c6b1971be42ea2ee5",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -253,7 +253,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "fe78d48c537dc3b38732c148cc31be731b4c08273d08694b0b3bbe6ea38ecbaf",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -277,7 +277,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "41dc6226561f20ffe8ced2a2177a2552bbc4e6caaf19d790dd52e767ef32d3eb",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1001",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1001",
         "record_id": "1001"
       },
       "payload": {
@@ -301,7 +301,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "3d5f9e6fabc44ed2a5d2d012e41b586c6e931fb61dce89f38f151f46cd5d712e",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1002",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1002",
         "record_id": "1002"
       },
       "payload": {
@@ -311,7 +311,7 @@
           "source_acl_state": "partial",
           "visibility": "credential_viewable"
         },
-        "canonical_uri": "https://confluence.example.invalid/spaces/ENG/pages/1002",
+        "canonical_uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1002",
         "content_hash": "sha256:de8a1b46d448e1f88b50693e544002d14179c8af84b2e757bd71eccbc486ffd9",
         "document_id": "doc:confluence:1002",
         "document_type": "page",
@@ -347,7 +347,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "db827291eb0d031fb713dd5e0ce85c970074e54cda15f84afeaf3adb913cb2d9",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1002",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1002",
         "record_id": "1002"
       },
       "payload": {
@@ -381,7 +381,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "9cd9b56d214cdd465cdf4596d4c855afebcfc21438e80fc26fd8456d43af5824",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1002",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1002",
         "record_id": "1002"
       },
       "payload": {
@@ -405,7 +405,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "aa3a4d11e79b414f0db668e707be6b5e2278748505b7ea26fa1ed278e66935df",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1002",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1002",
         "record_id": "1002"
       },
       "payload": {
@@ -429,7 +429,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "ec0f744847444ac25a2e06f378113eda3c7e6329b62bb0ae11c378f79611cfd4",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1003",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1003",
         "record_id": "1003"
       },
       "payload": {
@@ -439,7 +439,7 @@
           "source_acl_state": "partial",
           "visibility": "credential_viewable"
         },
-        "canonical_uri": "https://confluence.example.invalid/spaces/ENG/pages/1003",
+        "canonical_uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1003",
         "content_hash": "sha256:0d56ca6c395c46af4afe7b9a9559ddc216cbf7dd5ecdf38caf4d2cb8980aa3b9",
         "document_id": "doc:confluence:1003",
         "document_type": "page",
@@ -478,7 +478,7 @@
         "scope_id": "doc-source:confluence:confluence.example.invalid:12345",
         "generation_id": "component-generation:abc",
         "fact_key": "62355aafc9f881b26aa7a86cbc12859ac0ce00155e1bd35f22b9f5967d27ff1b",
-        "uri": "https://confluence.example.invalid/spaces/ENG/pages/1003",
+        "uri": "https://confluence.example.invalid/wiki/spaces/ENG/pages/1003",
         "record_id": "1003"
       },
       "payload": {
