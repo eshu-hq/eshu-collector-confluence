@@ -1,0 +1,69 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  vet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.5"
+      - run: go build ./...
+      - run: go vet ./...
+      - name: go.mod and go.sum are tidy
+        run: go mod tidy -diff
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.5"
+      - run: go test -race -count=1 ./...
+
+  boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.5"
+      - run: go test -count=1 -run 'TestImportBoundary|TestGoMod' .
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t eshu-collector-confluence:ci .
+      - name: Seed smoke test
+        run: |
+          mkdir -p "$RUNNER_TEMP/component"
+          chmod 777 "$RUNNER_TEMP/component"
+          docker run --rm -v "$RUNNER_TEMP/component:/component" eshu-collector-confluence:ci seed --dest /component
+          test -x "$RUNNER_TEMP/component/collector"
+          test -f "$RUNNER_TEMP/component/manifest.yaml"
+
+  ci-complete:
+    if: always()
+    needs: [vet, test, boundary, image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every job to succeed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              echo "a required job finished with: $result"
+              exit 1
+            fi
+          done

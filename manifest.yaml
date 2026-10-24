@@ -1,0 +1,45 @@
+apiVersion: eshu.dev/v1alpha1
+kind: ComponentPackage
+metadata:
+  id: dev.eshu.collector.confluence
+  name: Confluence documentation collector
+  publisher: eshu-hq
+  version: 0.1.0
+spec:
+  compatibleCore: ">=0.0.5 <0.2.0"
+  componentType: collector
+  collectorKinds:
+    - documentation
+  runtime:
+    sdkProtocol: collector-sdk/v1alpha1
+    adapter: process
+  artifacts:
+    - platform: linux/amd64
+      image: ghcr.io/eshu-hq/eshu-collector-confluence@sha256:0000000000000000000000000000000000000000000000000000000000000000
+  emittedFacts:
+    - kind: documentation_source
+      schemaVersions:
+        - 1.0.0
+      sourceConfidence:
+        - observed
+      payloadSchemaRef: documentation_source
+    - kind: documentation_document
+      schemaVersions:
+        - 1.0.0
+      sourceConfidence:
+        - observed
+      payloadSchemaRef: documentation_document
+    - kind: documentation_section
+      schemaVersions:
+        - 1.1.0
+      sourceConfidence:
+        - observed
+      payloadSchemaRef: documentation_section
+    - kind: documentation_link
+      schemaVersions:
+        - 1.0.0
+      sourceConfidence:
+        - observed
+      payloadSchemaRef: documentation_link
+  telemetry:
+    metricsPrefix: eshu_dp_confluence_collector_

@@ -1,0 +1,9 @@
+{
+  "outcome": "retry_scheduled",
+  "requests": [
+    "GET /wiki/api/v2/spaces/12345?"
+  ],
+  "retry_after_seconds": 17,
+  "scenario": "error-rate-limited",
+  "source": "go/internal/collector/confluence (Source.Next over the recorded fixture)"
+}

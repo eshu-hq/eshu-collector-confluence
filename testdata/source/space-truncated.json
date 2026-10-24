@@ -1,0 +1,150 @@
+{
+  "description": "The cursor walk stops at max_total_pages=2 while the provider still has pages: coverage_warning truncated.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 2,
+    "max_total_pages": 2
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 200,
+      "body": {
+        "id": "12345",
+        "key": "ENG",
+        "name": "Engineering Handbook"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "body-format=storage&limit=2&status=current",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "1001",
+            "status": "current",
+            "title": "Page 1",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-02T08:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>Body 1</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1001",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          },
+          {
+            "id": "1002",
+            "status": "current",
+            "title": "Page 2",
+            "spaceId": "12345",
+            "parentId": "",
+            "ownerId": "",
+            "authorId": "",
+            "version": {
+              "number": 1,
+              "createdAt": "2026-09-03T08:00:00.000Z",
+              "authorId": ""
+            },
+            "body": {
+              "storage": {
+                "value": "<p>Body 2</p>",
+                "representation": "storage"
+              }
+            },
+            "_links": {
+              "webui": "/spaces/ENG/pages/1002",
+              "base": "https://confluence.example.invalid/wiki"
+            }
+          }
+        ],
+        "_links": {
+          "next": "/wiki/api/v2/spaces/12345/pages?cursor=c1&limit=2"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1001",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1001",
+        "status": "current",
+        "title": "Page 1",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-02T08:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>Body 1</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1001",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/1002",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "1002",
+        "status": "current",
+        "title": "Page 2",
+        "spaceId": "12345",
+        "parentId": "",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-03T08:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>Body 2</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/1002",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    }
+  ]
+}

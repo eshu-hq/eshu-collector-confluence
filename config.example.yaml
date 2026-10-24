@@ -1,0 +1,61 @@
+# Activation config for ONE Confluence scope (one space or one root page tree).
+# Enable it with:
+#   eshu component enable dev.eshu.collector.confluence \
+#     --instance confluence-eng --claims --config config.example.yaml
+# Run one activation per scope. Every host below is the reserved .invalid TLD:
+# replace the values, never commit a real host, token, or user.
+
+# host: the claim identity the workflow coordinator plans against. Set scope.id
+# to the id the in-tree collector used, so documentation read truth continues
+# across the cutover: doc-source:confluence:<lower-case host>:<space id>. In
+# page-tree mode the in-tree id carries the space id of the first page read.
+host:
+  sourceSystem: confluence
+  scope:
+    id: doc-source:confluence:confluence.example.invalid:12345
+    kind: documentation_source
+
+# process: how the worker launches the collector. Credentials are never listed
+# here; the collector reads them from the worker's environment (config.credentials).
+process:
+  command: ./collector
+  args:
+    - --sdk-stdio
+  # The host reads at most this many stdout bytes per claim (default 4 MiB).
+  # Keep config.limits.max_result_bytes below it.
+  stdout_limit_bytes: 33554432
+  stderr_limit_bytes: 65536
+
+config:
+  source:
+    base_url: https://confluence.example.invalid/wiki
+    # Exactly one of space_id and root_page_id.
+    space_id: "12345"
+    # root_page_id: "67890"
+    # space_key: ENG            # optional label for page-tree mode
+    page_limit: 100             # per-request page size, 1..250
+    max_total_pages: 5000       # cap across one cursor walk; truncation is reported
+  credentials:
+    # Names of environment variables in the worker, not the secrets themselves.
+    # Use email_env + api_token_env (Cloud API token) or bearer_token_env.
+    email_env: ESHU_CONFLUENCE_EMAIL
+    api_token_env: ESHU_CONFLUENCE_API_TOKEN
+    # bearer_token_env: ESHU_CONFLUENCE_BEARER_TOKEN
+  attestation:
+    # Maps ESHU_CONFLUENCE_ALLOW_EMPTY_SUCCESSOR. true is refused with the
+    # terminal failure class unsupported_option until a collector SDK release
+    # carries Generation.TrustedDeletion (README, Known gaps). Leave it false.
+    allow_empty_successor: false
+  limits:
+    # Upper bound for one claim. The host kills the process at the claim's
+    # initial lease expiry (default lease TTL 60 s; worker env
+    # ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL; heartbeats do not extend it), so
+    # the real bound is the smaller of this and the lease. The collector stops
+    # 5% (at most 2 s) before the lease expiry and returns a retryable
+    # claim-deadline-exceeded result. For a space that takes over a minute to
+    # read, set the worker lease TTL to at least 5m in the reference deployment.
+    claim_timeout_seconds: 300
+    fetch_concurrency: 4        # concurrent page-detail reads, 1..16
+    max_page_bytes: 1048576     # a larger page is skipped and the snapshot is partial
+    max_result_bytes: 30000000  # keep below process.stdout_limit_bytes
+    max_response_bytes: 16777216

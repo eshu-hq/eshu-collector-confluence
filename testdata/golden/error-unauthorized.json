@@ -1,0 +1,9 @@
+{
+  "error": "get confluence space: confluence request failed with status 401",
+  "outcome": "error",
+  "requests": [
+    "GET /wiki/api/v2/spaces/12345?"
+  ],
+  "scenario": "error-unauthorized",
+  "source": "go/internal/collector/confluence (Source.Next over the recorded fixture)"
+}

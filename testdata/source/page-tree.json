@@ -1,0 +1,165 @@
+{
+  "description": "A root page tree with paginated descendants, a non-page descendant, and one page that returns 404.",
+  "mode": "page_tree",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "root_page_id": "3001",
+    "space_key": "OPS",
+    "page_limit": 3,
+    "max_total_pages": 5000
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/3001/descendants",
+      "query": "limit=3",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "3002",
+            "type": "page"
+          },
+          {
+            "id": "3003",
+            "type": "page"
+          },
+          {
+            "id": "9",
+            "type": "whiteboard"
+          }
+        ],
+        "_links": {
+          "next": "/wiki/api/v2/pages/3001/descendants?cursor=c1&limit=3"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/3001/descendants",
+      "query": "cursor=c1&limit=3",
+      "status": 200,
+      "body": {
+        "results": [
+          {
+            "id": "3004",
+            "type": "page"
+          }
+        ],
+        "_links": {}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/3001",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "3001",
+        "status": "current",
+        "title": "Ops Home",
+        "spaceId": "67890",
+        "parentId": "",
+        "ownerId": "u-300",
+        "authorId": "",
+        "version": {
+          "number": 2,
+          "createdAt": "2026-09-01T00:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>Start <a href=\"https://docs.example.invalid/ops\">here</a></p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/3001",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": [
+            {
+              "name": "home"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/3002",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "3002",
+        "status": "current",
+        "title": "Ops Child",
+        "spaceId": "67890",
+        "parentId": "3001",
+        "ownerId": "",
+        "authorId": "u-301",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-02T00:00:00.000Z",
+          "authorId": "u-301"
+        },
+        "body": {
+          "storage": {
+            "value": "<p>child</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/3002",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/3003",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 404,
+      "body": {
+        "message": "missing"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/pages/3004",
+      "query": "body-format=storage&include-labels=true&include-version=true",
+      "status": 200,
+      "body": {
+        "id": "3004",
+        "status": "current",
+        "title": "Ops Grandchild",
+        "spaceId": "67890",
+        "parentId": "3002",
+        "ownerId": "",
+        "authorId": "",
+        "version": {
+          "number": 1,
+          "createdAt": "2026-09-03T00:00:00.000Z",
+          "authorId": ""
+        },
+        "body": {
+          "storage": {
+            "value": "<p>grandchild</p>",
+            "representation": "storage"
+          }
+        },
+        "_links": {
+          "webui": "/spaces/ENG/pages/3004",
+          "base": "https://confluence.example.invalid/wiki"
+        },
+        "labels": {
+          "results": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "description": "An empty space with the operator's empty-successor attestation.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 100,
+    "max_total_pages": 5000,
+    "allow_empty_successor": true
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 200,
+      "body": {
+        "id": "12345",
+        "key": "ENG",
+        "name": "Engineering Handbook"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345/pages",
+      "query": "body-format=storage&limit=100&status=current",
+      "status": 200,
+      "body": {
+        "results": [],
+        "_links": {}
+      }
+    }
+  ]
+}

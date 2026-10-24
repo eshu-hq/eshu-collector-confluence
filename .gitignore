@@ -1,0 +1,6 @@
+/collector
+/dist/
+*.test
+*.out
+coverage.txt
+.DS_Store

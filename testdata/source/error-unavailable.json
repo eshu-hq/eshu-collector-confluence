@@ -1,0 +1,21 @@
+{
+  "description": "HTTP 503 without Retry-After.",
+  "mode": "space",
+  "config": {
+    "base_url": "https://confluence.example.invalid/wiki",
+    "space_id": "12345",
+    "page_limit": 100,
+    "max_total_pages": 5000
+  },
+  "exchanges": [
+    {
+      "method": "GET",
+      "path": "/wiki/api/v2/spaces/12345",
+      "query": "",
+      "status": 503,
+      "body": {
+        "message": "provider error body"
+      }
+    }
+  ]
+}
