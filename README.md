@@ -69,10 +69,14 @@ carries everything this collector reports:
 | complete or partial | `fact_count`, `source_latency_ms`, and for a partial snapshot `partial` and `warning_count` (skipped pages, plus one when the walk hit `max_total_pages`) |
 | retryable or terminal | `failure_class`, `retry_after_seconds` (retryable), and `source_latency_ms` (how long the claim ran before it failed) |
 
-The worker sets no status recorder yet, so the host drops these rows today and
-only the failure class reaches the work item. The host records the rows once
-eshu-hq/eshu#8908 lands; the latency, counts, and retry hint above are not
-visible to operators before then.
+On eshu `main` since eshu-hq/eshu#9008 (a release carries it once one is cut
+after that change), the worker sets a status recorder: it records every claim
+result as six `eshu_dp_component_extension_*` metrics and one
+`component extension result` log line, and it honors `retry_after_seconds`
+(capped at one hour, never below the poll interval; the
+`eshu_dp_component_extension_retry_after_seconds` gauge holds the request, not
+the applied delay). Before a release carries it, only the failure class
+reaches the work item.
 
 `failure_class` is a bounded token from the table above. `unsupported_option`
 means the activation set `attestation.allow_empty_successor: true`, the only
@@ -161,9 +165,10 @@ enabled".
 Check these on the reference activation before the in-tree collector is removed:
 
 - **Space read time vs lease TTL.** Measure how long the largest space takes
-  to read: the status row's `source_latency_ms` once the host records it
-  (eshu-hq/eshu#8908), or by timing a run of the binary by hand against the
-  space until then. It must fit inside the worker
+  to read: the status row's `source_latency_ms`, which the host records in
+  `eshu_dp_component_extension_source_latency_seconds` on eshu `main` since
+  eshu-hq/eshu#9008, or by timing a run of the binary by hand against the
+  space. It must fit inside the worker
   lease TTL minus the deadline margin. A read that does not fit retries with
   `claim-deadline-exceeded` until the host's attempt budget is spent, then
   dead-letters. Raise `ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL` on the worker
@@ -173,8 +178,8 @@ Check these on the reference activation before the in-tree collector is removed:
   page keeps its `/wiki` context path; the in-tree collector resolved the path
   against the base and dropped it. The join follows the shape Atlassian
   documents, not a live read (see [testdata/README.md](testdata/README.md)).
-  Check a few `canonical_uri` values against a live tenant before relying on
-  them. The change moves `canonical_uri` and the freshness hint of every Cloud
+  Check a few stored `canonical_uri` values against a live tenant before
+  relying on them; eshu-hq/eshu#8913 stays open for that read. The change moves `canonical_uri` and the freshness hint of every Cloud
   page, so the first claim after cutover stores a fresh generation.
 - **Scope id.** `host.scope.id` must equal the in-tree id so read truth
   continues.
@@ -249,7 +254,8 @@ gh attestation verify oci://ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<di
   delete the refusal in `parseAttestation`.
 - No OTEL metrics or traces. Out-of-process collectors emit no metrics or
   traces by design (arbiter ruling, 2026-10-23): the SDK status record is the
-  contract and the host records it once eshu-hq/eshu#8908 lands. The manifest
+  contract and the host records it on eshu `main` since eshu-hq/eshu#9008
+  (a release carries it once one is cut after that change). The manifest
   declares the metric prefix `eshu_dp_confluence_collector_`, but nothing in
   this process emits it, and the in-tree Confluence metrics have no equivalent.
 - `internal/stableid` and `internal/httpx` are copies of in-tree helpers. Replace
