@@ -67,12 +67,12 @@ func TestFixturesPassTheHostChecks(t *testing.T) {
 
 // TestPublicHarnessCannotYetJudgeCoreKindManifests pins a known gap, not a
 // pass. conformance.Run rejects any manifest whose fact kinds are not
-// namespaced, and the host's `eshu component conform`, `inspect`, and `verify`
-// reject core-owned kinds outright because they load the manifest without
-// producer-grant context. This collector emits the core documentation kinds
-// under producer grants, so none of those tools can return "passed" for it.
-// When the harness learns grants this test fails: replace it with the harness
-// verdict over the committed fixtures. The decision is recorded in README.md.
+// namespaced, and the published harness has no grant concept, so `eshu
+// component conform` fails for this collector even when the component home's
+// producer grants admit its core documentation kinds. `inspect` and `verify`
+// do pass with those grants. When the harness learns grants this test fails:
+// replace it with the harness verdict over the committed fixtures. The
+// decision is recorded in README.md.
 func TestPublicHarnessCannotYetJudgeCoreKindManifests(t *testing.T) {
 	t.Parallel()
 
