@@ -23,7 +23,10 @@
 # |                                                     | lint, test, race, boundary  |
 # | Push to main                                        | lint, test, race, boundary, |
 # |                                                     | govulncheck, gosec          |
-# | Weekly schedule                                     | govulncheck, gosec          |
+# | Weekly schedule                                     | govulncheck, gosec; a lane  |
+# |                                                     | failure files or updates a  |
+# |                                                     | findings issue (gosec stays |
+# |                                                     | advisory on PRs)            |
 #
 # Fixture entries are test-consumed (proven 2026-10-28):
 #   testdata/**       fixtures_test.go, parity_test.go, weburi_test.go
@@ -328,6 +331,16 @@ jobs:
           docker run --rm --network none -v "${seed}:/component" eshu-collector-confluence:ci seed --dest /component
           test -x "${seed}/collector"
           test -s "${seed}/manifest.yaml"
+      - name: manifest keeps the unreleased zero digest
+        run: |
+          # The committed manifest is the seed template: an image cannot
+          # name its own digest, so this copy must keep the exact zero
+          # placeholder and the deploy stamps the real digest via
+          # seed --image-ref. Anything else is a half-pinned manifest
+          # that looks releasable but is not, so the lane fails loudly.
+          ref=$(awk '/^[[:space:]]*image:/ {print $2}' manifest.yaml)
+          zero="ghcr.io/eshu-hq/eshu-collector-confluence@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+          if [ "${ref}" != "${zero}" ]; then echo "FAIL: manifest image is ${ref}, want the exact zero placeholder"; exit 1; fi
 
   govulncheck:
     needs: changes
@@ -336,6 +349,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      issues: write # scheduled runs file or update a findings issue
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -347,6 +361,19 @@ jobs:
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
           govulncheck ./...
+      - name: file or update findings issue (scheduled runs)
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="[govulncheck] findings $(date -u +%F)"
+          body="Scheduled govulncheck failed on ${{ github.sha }}. See run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          open=$(gh issue list --search "$title in:title" --state open --json number --jq '.[0].number')
+          if [ -n "$open" ] && [ "$open" != "null" ]; then
+            gh issue comment "$open" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
 
   gosec:
     needs: changes
@@ -355,7 +382,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      security-events: write
+      security-events: write # SARIF upload to the Security tab
+      issues: write # scheduled runs file or update a findings issue
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -366,9 +394,39 @@ jobs:
         with:
           args: -fmt sarif -out gosec.sarif ./...
       - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        # Non-PR events only: fork PRs cannot write code-scanning results,
+        # and continue-on-error would turn a 403 into a silent green no-op.
+        # The scan step above needs contents:read alone, so PR lanes still
+        # run for forks on a read-only token.
+        if: github.event_name != 'pull_request'
         with:
           sarif_file: gosec.sarif
         continue-on-error: true
+      - name: finding count (advisory on PR; red on scheduled findings)
+        run: |
+          n=$(jq '[.runs[].results[]] | length' gosec.sarif 2>/dev/null || echo 0)
+          echo "## gosec findings: $n" >> "$GITHUB_STEP_SUMMARY"
+          echo "gosec findings: $n"
+          # Findings fail scheduled runs so the failure-gated issue step
+          # below is reachable; PR runs stay advisory green. Triage
+          # happens in the open, never blanket-excluded.
+          if [ "${n:-0}" -gt 0 ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "gosec findings on a scheduled run; failing to file the issue."
+            exit 1
+          fi
+      - name: file or update findings issue (scheduled runs)
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="[gosec] findings $(date -u +%F)"
+          body="Scheduled gosec failed on ${{ github.sha }}. See run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          open=$(gh issue list --search "$title in:title" --state open --json number --jq '.[0].number')
+          if [ -n "$open" ] && [ "$open" != "null" ]; then
+            gh issue comment "$open" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
 
   ci-complete:
     # changes is listed so a failed path-selection job cannot false-green:
