@@ -13,6 +13,13 @@ binary from Go sources and `go.mod`/`go.sum`, so a go-class change must also
 validate the image build). The `ci-complete` aggregator is the only required
 check; it passes when needed lanes passed or were legitimately skipped.
 
+A weekly schedule runs `govulncheck` and `gosec`; a lane failure there files
+or updates a findings issue. `gosec` stays advisory on PRs and fails only a
+scheduled run that has findings. The committed `manifest.yaml` keeps the
+zero placeholder digest by design (an image cannot name its own digest);
+the `image` lane fails on any other value, and the deploy stamps the real
+digest with `collector seed --image-ref`.
+
 Lint uses `golangci-lint` v2.12.2 with the org set (`govet`, `staticcheck`,
 `ineffassign`, `unused`, `errcheck`; formatter `gofumpt`) in `.golangci.yml`.
 Lint runs on the whole repo with no baselines; an exclusion needs a reason and

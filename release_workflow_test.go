@@ -35,6 +35,9 @@ type workflowStep struct {
 	Uses string            `yaml:"uses"`
 	Run  string            `yaml:"run"`
 	Env  map[string]string `yaml:"env"`
+	// If holds the step's `if:` condition. The scheduled-findings rules
+	// read it; the release rules ignore it.
+	If string `yaml:"if"`
 }
 
 // workflowDoc is the part of a GitHub Actions workflow the release rules read.
@@ -47,6 +50,9 @@ type workflowDoc struct {
 		// it; the release rules ignore it.
 		If    string         `yaml:"if"`
 		Steps []workflowStep `yaml:"steps"`
+		// Permissions holds the job's `permissions:` block. The
+		// scheduled-findings rules read it; the release rules ignore it.
+		Permissions map[string]any `yaml:"permissions"`
 	} `yaml:"jobs"`
 }
 
