@@ -206,13 +206,13 @@ jobs:
       module: confluence
       go-version-file: go.mod
       coverage-floor: 90
-      run-lint: ${{ needs.changes.outputs.run-lint }}
-      run-test: ${{ needs.changes.outputs.run-test }}
-      run-race: ${{ needs.changes.outputs.run-race }}
-      run-boundary: ${{ needs.changes.outputs.run-boundary }}
+      run-lint: ${{ needs.changes.outputs.run-lint == 'true' }}
+      run-test: ${{ needs.changes.outputs.run-test == 'true' }}
+      run-race: ${{ needs.changes.outputs.run-race == 'true' }}
+      run-boundary: ${{ needs.changes.outputs.run-boundary == 'true' }}
       boundary-command: go test -count=1 -run 'TestImportBoundary|TestGoMod' .
-      run-shell: ${{ needs.changes.outputs.run-shell }}
-      run-image: ${{ needs.changes.outputs.run-image }}
+      run-shell: ${{ needs.changes.outputs.run-shell == 'true' }}
+      run-image: ${{ needs.changes.outputs.run-image == 'true' }}
       image-tag: eshu-collector-confluence:ci
       image-context: .
       image-command: |
@@ -224,11 +224,11 @@ jobs:
         ref=$(awk '/^[[:space:]]*image:/ {print $2}' manifest.yaml)
         zero="ghcr.io/eshu-hq/eshu-collector-confluence@sha256:0000000000000000000000000000000000000000000000000000000000000000"
         if [ "${ref}" != "${zero}" ]; then echo "FAIL: manifest image is ${ref}, want the exact zero placeholder"; exit 1; fi
-      run-govulncheck: ${{ needs.changes.outputs.run-govulncheck }}
-      run-gosec: ${{ needs.changes.outputs.run-gosec }}
+      run-govulncheck: ${{ needs.changes.outputs.run-govulncheck == 'true' }}
+      run-gosec: ${{ needs.changes.outputs.run-gosec == 'true' }}
       gosec-version: v2.30.0
       gosec-fail-on-findings: ${{ github.event_name == 'schedule' }}
-      run-actionlint: ${{ needs.changes.outputs.run-lint }}
+      run-actionlint: ${{ needs.changes.outputs.run-lint == 'true' }}
 
   gosec-sarif:
     # The reusable keeps SARIF in an artifact so fork PRs stay read-only;

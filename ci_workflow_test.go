@@ -82,10 +82,13 @@ func TestImageLaneRunsOnGoSources(t *testing.T) {
 	}
 	// Every lane the decide script gates must reach the reusable through
 	// its run-* inputs, so a lane the caller forgets to wire never runs.
+	// needs outputs are strings while the reusable declares booleans, so
+	// the wiring must convert explicitly: a bare output string fails the
+	// call before any lane starts.
 	for _, lane := range []string{"lint", "test", "race", "boundary", "shell", "image", "govulncheck", "gosec"} {
 		input, _ := goCI.With["run-"+lane].(string)
-		if !strings.Contains(input, "needs.changes.outputs.run-"+lane) {
-			t.Errorf("go-ci run-%s = %q, want the decide-script run-%s output", lane, input, lane)
+		if !strings.Contains(input, "needs.changes.outputs.run-"+lane+" == 'true'") {
+			t.Errorf("go-ci run-%s = %q, want the decide-script run-%s output converted to boolean", lane, input, lane)
 		}
 	}
 }
