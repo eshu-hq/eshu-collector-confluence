@@ -125,26 +125,28 @@ jobs:
           WORKFLOW: ${{ steps.filter.outputs.workflow }}
           DOCS: ${{ steps.filter.outputs.docs }}
         run: |
+          # Decide in shell variables, then emit all eight outputs with one
+          # redirect (SC2129: never repeat >> "${GITHUB_OUTPUT}").
           set -euo pipefail
           is_true() { [ "$1" = "true" ]; }
+          run_lint=false
+          run_test=false
+          run_race=false
+          run_boundary=false
+          run_shell=false
+          run_image=false
+          run_govulncheck=false
+          run_gosec=false
           if [ "${EVENT_NAME}" = "schedule" ]; then
-            echo "run-lint=false" >> "${GITHUB_OUTPUT}"
-            echo "run-test=false" >> "${GITHUB_OUTPUT}"
-            echo "run-race=false" >> "${GITHUB_OUTPUT}"
-            echo "run-boundary=false" >> "${GITHUB_OUTPUT}"
-            echo "run-shell=false" >> "${GITHUB_OUTPUT}"
-            echo "run-image=false" >> "${GITHUB_OUTPUT}"
-            echo "run-govulncheck=true" >> "${GITHUB_OUTPUT}"
-            echo "run-gosec=true" >> "${GITHUB_OUTPUT}"
+            run_govulncheck=true
+            run_gosec=true
           elif [ "${EVENT_NAME}" = "push" ]; then
-            echo "run-lint=true" >> "${GITHUB_OUTPUT}"
-            echo "run-test=true" >> "${GITHUB_OUTPUT}"
-            echo "run-race=true" >> "${GITHUB_OUTPUT}"
-            echo "run-boundary=true" >> "${GITHUB_OUTPUT}"
-            echo "run-shell=false" >> "${GITHUB_OUTPUT}"
-            echo "run-image=false" >> "${GITHUB_OUTPUT}"
-            echo "run-govulncheck=true" >> "${GITHUB_OUTPUT}"
-            echo "run-gosec=true" >> "${GITHUB_OUTPUT}"
+            run_lint=true
+            run_test=true
+            run_race=true
+            run_boundary=true
+            run_govulncheck=true
+            run_gosec=true
           else
             unclassified=false
             if ! is_true "${GO}" && ! is_true "${FIXTURES}" && ! is_true "${SHELL}" \
@@ -153,39 +155,35 @@ jobs:
               unclassified=true
             fi
             if is_true "${GO}" || is_true "${DEPS}" || is_true "${WORKFLOW}" || [ "${unclassified}" = "true" ]; then
-              echo "run-lint=true" >> "${GITHUB_OUTPUT}"
-            else
-              echo "run-lint=false" >> "${GITHUB_OUTPUT}"
+              run_lint=true
             fi
             if is_true "${GO}" || is_true "${FIXTURES}" || is_true "${DEPS}" || is_true "${WORKFLOW}" || [ "${unclassified}" = "true" ]; then
-              echo "run-test=true" >> "${GITHUB_OUTPUT}"
-            else
-              echo "run-test=false" >> "${GITHUB_OUTPUT}"
+              run_test=true
             fi
             if is_true "${GO}" || is_true "${DEPS}" || is_true "${WORKFLOW}" || [ "${unclassified}" = "true" ]; then
-              echo "run-race=true" >> "${GITHUB_OUTPUT}"
-              echo "run-boundary=true" >> "${GITHUB_OUTPUT}"
-            else
-              echo "run-race=false" >> "${GITHUB_OUTPUT}"
-              echo "run-boundary=false" >> "${GITHUB_OUTPUT}"
+              run_race=true
+              run_boundary=true
             fi
             if is_true "${SHELL}"; then
-              echo "run-shell=true" >> "${GITHUB_OUTPUT}"
-            else
-              echo "run-shell=false" >> "${GITHUB_OUTPUT}"
+              run_shell=true
             fi
             if is_true "${IMAGE}"; then
-              echo "run-image=true" >> "${GITHUB_OUTPUT}"
-            else
-              echo "run-image=false" >> "${GITHUB_OUTPUT}"
+              run_image=true
             fi
             if is_true "${DEPS}"; then
-              echo "run-govulncheck=true" >> "${GITHUB_OUTPUT}"
-            else
-              echo "run-govulncheck=false" >> "${GITHUB_OUTPUT}"
+              run_govulncheck=true
             fi
-            echo "run-gosec=false" >> "${GITHUB_OUTPUT}"
           fi
+          {
+            echo "run-lint=${run_lint}"
+            echo "run-test=${run_test}"
+            echo "run-race=${run_race}"
+            echo "run-boundary=${run_boundary}"
+            echo "run-shell=${run_shell}"
+            echo "run-image=${run_image}"
+            echo "run-govulncheck=${run_govulncheck}"
+            echo "run-gosec=${run_gosec}"
+          } >> "${GITHUB_OUTPUT}"
 
   lint:
     needs: changes
@@ -297,7 +295,7 @@ jobs:
         with:
           persist-credentials: false
       - name: shellcheck
-        uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca
+        uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # master past v2.0.0
         with:
           scandir: .
 
@@ -354,7 +352,7 @@ jobs:
         with:
           persist-credentials: false
       - name: gosec SARIF (advisory until the false-positive rate is measured)
-        uses: securego/gosec@22fd014b7bfcd88c892bfccea1784cade496cdef
+        uses: securego/gosec@22fd014b7bfcd88c892bfccea1784cade496cdef # master past v2.30.0
         continue-on-error: true
         with:
           args: -fmt sarif -out gosec.sarif ./...
@@ -364,7 +362,9 @@ jobs:
         continue-on-error: true
 
   ci-complete:
-    needs: [lint, test, race, boundary, shell, image, govulncheck, gosec]
+    # changes is listed so a failed path-selection job cannot false-green:
+    # its lanes would skip while the failure itself trips the aggregator.
+    needs: [changes, lint, test, race, boundary, shell, image, govulncheck, gosec]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
