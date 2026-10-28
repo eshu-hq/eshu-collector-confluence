@@ -2,7 +2,8 @@
 # Pinned to golangci-lint v2.12.2 (same binary Eshu uses).
 # Org lint set only: govet, staticcheck (which subsumes gosimple in v2),
 # ineffassign, unused, errcheck; formatter gofumpt. No baselines,
-# no new-from-rev.
+# no new-from-rev, no exclusions: the tree is clean under the org set,
+# so any future exclusion needs a reason and a linked open issue here.
 version: "2"
 
 linters:
@@ -13,14 +14,6 @@ linters:
     - ineffassign
     - unused
     - errcheck
-
-  exclusions:
-    # Reason: silence stock errcheck/staticcheck noise on idiomatic error
-    # handling and known false-positive patterns; no per-issue rules needed.
-    presets:
-      - std-error-handling
-      - common-false-positives
-    rules: []
 
 formatters:
   enable:
