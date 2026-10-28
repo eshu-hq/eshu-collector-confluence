@@ -6,9 +6,12 @@ commands that CI runs (vet, whole-repo `golangci-lint`, gofumpt format check,
 and race with the coverage floor). The floor is 90% of statements
 (`COVERAGE_FLOOR` in `ci.yml` and the `Makefile`); it may only rise.
 
-CI selects lanes by changed paths (see `ci.yml`): docs-only PRs run no lane,
-fixture-only PRs run `test` only, shell-only PRs run `shell` only, and Go PRs
-run `lint`, `test`, `race`, `boundary`, and `image` (the Dockerfile builds the
+Lane bodies live in the `eshu-hq/.github` v2 reusable workflow; `ci.yml`
+is a thin caller that keeps path selection, the required context, the
+SARIF upload, and scheduled issue filing. CI selects lanes by changed
+paths (see `ci.yml`): docs-only PRs run no lane, fixture-only PRs run
+`test` only, shell-only PRs run `shell` only, and Go PRs run `lint`,
+`test`, `race`, `boundary`, and `image` (the Dockerfile builds the
 binary from Go sources and `go.mod`/`go.sum`, so a go-class change must also
 validate the image build). The `ci-complete` aggregator is the only required
 check; it passes when needed lanes passed or were legitimately skipped.

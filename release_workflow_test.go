@@ -53,6 +53,12 @@ type workflowDoc struct {
 		// Permissions holds the job's `permissions:` block. The
 		// scheduled-findings rules read it; the release rules ignore it.
 		Permissions map[string]any `yaml:"permissions"`
+		// Uses holds a reusable-workflow call. The caller-contract test
+		// reads it; the release rules ignore it.
+		Uses string `yaml:"uses"`
+		// With holds the reusable-workflow inputs. The caller-contract
+		// test reads them; the release rules ignore them.
+		With map[string]any `yaml:"with"`
 	} `yaml:"jobs"`
 }
 
