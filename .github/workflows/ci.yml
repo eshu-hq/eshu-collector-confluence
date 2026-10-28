@@ -404,7 +404,11 @@ jobs:
         continue-on-error: true
       - name: finding count (advisory on PR; red on scheduled findings)
         run: |
-          n=$(jq '[.runs[].results[]] | length' gosec.sarif 2>/dev/null || echo 0)
+          # No sarif means the scan itself broke: fail on every event
+          # rather than reporting zero findings. (The shell runs with -e,
+          # so a corrupt sarif fails here the same way.)
+          if [ ! -s gosec.sarif ]; then echo "FAIL: gosec wrote no sarif"; exit 1; fi
+          n=$(jq '[.runs[].results[]] | length' gosec.sarif)
           echo "## gosec findings: $n" >> "$GITHUB_STEP_SUMMARY"
           echo "gosec findings: $n"
           # Findings fail scheduled runs so the failure-gated issue step
