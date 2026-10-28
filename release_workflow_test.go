@@ -232,10 +232,10 @@ func TestReleaseWorkflowGuardCatchesViolations(t *testing.T) {
 		t.Fatalf("os.ReadFile(release.yml) error = %v", err)
 	}
 	good := string(raw)
-	sha := "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09"
+	sha := "3d3c42e5aac5ba805825da76410c181273ba90b1"
 	tests := map[string]string{
 		"tag pin":          strings.Replace(good, "actions/checkout@"+sha, "actions/checkout@v5", 1),
-		"short sha":        strings.Replace(good, "actions/checkout@"+sha, "actions/checkout@fbc6f39", 1),
+		"short sha":        strings.Replace(good, "actions/checkout@"+sha, "actions/checkout@3d3c42e", 1),
 		"pull request":     strings.Replace(good, "on:\n  push:", "on:\n  pull_request:\n  push:", 1),
 		"branch push":      strings.Replace(good, "    tags:\n      - \"v*\"", "    branches: [main]\n    tags:\n      - \"v*\"", 1),
 		"any tag":          strings.Replace(good, "- \"v*\"", "- \"*\"", 1),
