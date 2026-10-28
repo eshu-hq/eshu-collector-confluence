@@ -22,7 +22,11 @@ import (
 // (run-image output), not through dorny filter outputs in the image
 // job's if, so the test pins the decide wiring instead: the go filter
 // covers **/*.go and the deps filter covers go.mod/go.sum, and the
-// run_image assignment must answer to both.
+// run_image assignment must answer to both with positive polarity.
+// A bare ${GO} substring match would pass a negated condition such as
+// "! is_true", so the test asserts the is_true clauses and rejects
+// their negations, mirroring the terraform-state/cicd-run hardened
+// guards.
 func TestImageLaneRunsOnGoSources(t *testing.T) {
 	t.Parallel()
 
@@ -55,9 +59,14 @@ func TestImageLaneRunsOnGoSources(t *testing.T) {
 	if start := strings.LastIndex(cond, "if "); start >= 0 {
 		cond = cond[start:]
 	}
-	for _, want := range []string{`${IMAGE}`, `${GO}`, `${DEPS}`} {
+	for _, want := range []string{`${IMAGE}`, `is_true "${GO}"`, `is_true "${DEPS}"`} {
 		if !strings.Contains(cond, want) {
 			t.Errorf("run_image condition %q lacks %s: Go sources (**/*.go, GO filter) and go.mod/go.sum (DEPS filter) ship in the image", cond, want)
+		}
+	}
+	for _, bad := range []string{`! is_true "${GO}"`, `! is_true "${DEPS}"`} {
+		if strings.Contains(cond, bad) {
+			t.Errorf("run_image condition %q contains inverted %s: negated GO/DEPS would skip the image lane on Go-source PRs", cond, bad)
 		}
 	}
 	image, ok := workflow.Jobs["image"]
