@@ -42,7 +42,10 @@ type workflowDoc struct {
 	On          map[string]any `yaml:"on"`
 	Permissions any            `yaml:"permissions"`
 	Jobs        map[string]struct {
-		Needs any            `yaml:"needs"`
+		Needs any `yaml:"needs"`
+		// If holds the job's `if:` condition. The image-lane test reads
+		// it; the release rules ignore it.
+		If    string         `yaml:"if"`
 		Steps []workflowStep `yaml:"steps"`
 	} `yaml:"jobs"`
 }
