@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -261,5 +260,3 @@ func nonEmptyStrings(values ...string) []string {
 	}
 	return out
 }
-
-func itoa(value int) string { return strconv.Itoa(value) }
