@@ -114,7 +114,7 @@ func TestCollectBackoffGrowsWithAttemptAndIsDeterministic(t *testing.T) {
 		return collectOnce(t, site, testConfig(site), claim).Statuses[0].RetryAfterSeconds
 	}
 	first, third, tenth := delayFor(1), delayFor(3), delayFor(10)
-	if !(first < third && third <= tenth) {
+	if first >= third || third > tenth {
 		t.Errorf("delays = %d, %d, %d, want growth with the attempt", first, third, tenth)
 	}
 	if tenth > 75 {

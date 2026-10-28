@@ -1,0 +1,21 @@
+# Dependabot keeps the Go module and GitHub Actions pinned in ci.yml and
+# release.yml current. Updates are grouped weekly to keep the signal high:
+# one gomod PR and one github-actions PR per week at most.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      gomod:
+        patterns:
+          - "*"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"

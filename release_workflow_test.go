@@ -247,7 +247,7 @@ func TestReleaseWorkflowGuardCatchesViolations(t *testing.T) {
 		"issuer changed":         strings.Replace(good, "https://token.actions.githubusercontent.com", "https://accounts.example.invalid", 1),
 		"identity not workflow":  strings.Replace(good, "github.workflow_ref", "github.ref", 1),
 		"identity regexp":        strings.Replace(good, identityFlag, `--certificate-identity-regexp ".*"`, 1),
-		"attestation verify off": strings.Replace(good, "gh attestation verify", "gh attestation download", -1),
+		"attestation verify off": strings.ReplaceAll(good, "gh attestation verify", "gh attestation download"),
 		"write-all permissions":  strings.Replace(good, "permissions:\n  contents: read\n\nconcurrency", "permissions: write-all\n\nconcurrency", 1),
 		"extra top permission":   strings.Replace(good, "permissions:\n  contents: read\n\nconcurrency", "permissions:\n  contents: read\n  packages: write\n\nconcurrency", 1),
 		"second platform":        strings.Replace(good, "platforms: linux/amd64", "platforms: linux/amd64,linux/arm64", 1),

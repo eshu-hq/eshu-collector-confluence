@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -271,13 +270,4 @@ func kindCounts(result sdk.Result) map[string]int {
 		counts[fact.Kind]++
 	}
 	return counts
-}
-
-func sortedKinds(counts map[string]int) []string {
-	kinds := make([]string, 0, len(counts))
-	for kind := range counts {
-		kinds = append(kinds, kind)
-	}
-	sort.Strings(kinds)
-	return kinds
 }

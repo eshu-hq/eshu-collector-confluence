@@ -70,10 +70,12 @@ func runStdio(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.
 		return err
 	}
 	if line, err := confluence.HealthLine(handled, time.Since(startedAt)); err == nil {
-		fmt.Fprintf(stderr, "collector health: %s\n", line)
+		// Best-effort debug aid; a stderr write failure must not fail the claim.
+		_, _ = fmt.Fprintf(stderr, "collector health: %s\n", line)
 	}
 	if handled.Detail != "" {
-		fmt.Fprintf(stderr, "collector detail: %s\n", handled.Detail)
+		// Best-effort debug aid; a stderr write failure must not fail the claim.
+		_, _ = fmt.Fprintf(stderr, "collector detail: %s\n", handled.Detail)
 	}
 	// Compact output: the host caps stdout, and the result byte budget is
 	// measured on the compact encoding.

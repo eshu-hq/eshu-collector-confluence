@@ -81,7 +81,9 @@ func runSeed(args []string, stdout io.Writer, getenv func(string) string) error 
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(stdout, "seeded %s and %s (%s)\n", seededBinaryName, seededManifestName, changed)
+	// Best-effort confirmation; the files are already written, so a stdout
+	// write failure must not report the seed as failed.
+	_, _ = fmt.Fprintf(stdout, "seeded %s and %s (%s)\n", seededBinaryName, seededManifestName, changed)
 	return nil
 }
 

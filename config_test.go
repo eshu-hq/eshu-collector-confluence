@@ -209,7 +209,7 @@ func TestCredentialsNeverFormatTheirSecrets(t *testing.T) {
 	creds := Credentials{Email: "bot@example.invalid", APIToken: canaryToken, BearerToken: canaryToken}
 	cfg := Config{Credentials: creds}
 	for _, rendered := range []string{
-		fmt.Sprintf("%v", creds), fmt.Sprintf("%+v", creds), fmt.Sprintf("%#v", creds), fmt.Sprintf("%s", creds),
+		fmt.Sprintf("%v", creds), fmt.Sprintf("%+v", creds), fmt.Sprintf("%#v", creds), creds.String(),
 		fmt.Sprintf("%v", cfg), fmt.Sprintf("%+v", cfg),
 	} {
 		if strings.Contains(rendered, canaryToken) || strings.Contains(rendered, "bot@example.invalid") {

@@ -10,8 +10,8 @@
 # whatever the builder is (the check directive above allows the constant
 # platform on purpose): the build stage runs natively and cross-compiles, and
 # the final stage is pinned to amd64 (both base digests are multi-arch indexes).
-# Base digests resolved 2026-09-17; re-pin both when bumping either base.
-FROM --platform=$BUILDPLATFORM golang:1.26.5-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 AS build
+# Base digests resolved 2026-10-28; re-pin both when bumping either base.
+FROM --platform=$BUILDPLATFORM golang:1.26.10-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
