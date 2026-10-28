@@ -11,11 +11,13 @@
 # | PR changes                                          | Lanes that run              |
 # |-----------------------------------------------------|-----------------------------|
 # | Docs only (README, *.md, LICENSE)                 | none; ci-complete succeeds  |
-# | Go sources (**/*.go, CODEOWNERS, .gitignore, Make)  | lint, test, race, boundary  |
+# | Go sources (**/*.go, CODEOWNERS, .gitignore, Make)  | lint, test, race, boundary, |
+# |                                                     | image (the Dockerfile builds |
+# |                                                     | the binary from them)       |
 # | Fixtures/config tests read (below, grep-proven)     | test only                   |
 # | Shell scripts (**/*.sh)                             | shell only                  |
 # | go.mod / go.sum / .golangci.yml                     | lint, test, race, boundary, |
-# |                                                     | govulncheck                 |
+# |                                                     | govulncheck, image          |
 # | Dockerfile, .dockerignore                           | image only                  |
 # | .github/workflows/**                                | actionlint (in lint) plus   |
 # |                                                     | lint, test, race, boundary  |
@@ -167,7 +169,14 @@ jobs:
             if is_true "${SHELL}"; then
               run_shell=true
             fi
-            if is_true "${IMAGE}"; then
+            # Go sources and the module ship in the image (the Dockerfile
+            # COPYs go.mod/go.sum, COPYs the whole context keeping .go
+            # sources, and go-builds the binary), so go-class PRs must
+            # select the image lane: a go.mod toolchain bump past the
+            # pinned base would otherwise pass every Go lane yet break
+            # docker build. DEPS also matches .golangci.yml, which only
+            # over-selects a build-only lane.
+            if is_true "${IMAGE}" || is_true "${GO}" || is_true "${DEPS}"; then
               run_image=true
             fi
             if is_true "${DEPS}"; then
