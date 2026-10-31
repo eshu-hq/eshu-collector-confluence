@@ -186,14 +186,17 @@ Check these on the reference activation before the in-tree collector is removed:
 
 ## Releasing
 
-Releases are tags. After the change merges, push a `v*` tag (for example
-`v0.1.0`) on the merge commit. `.github/workflows/release.yml` runs only for a
-pushed tag; it re-runs vet and the race tests, builds the `linux/amd64` image,
-pushes `ghcr.io/eshu-hq/eshu-collector-confluence:<tag>`, writes the image
-digest to the job summary, signs the digest with cosign (keyless), and attaches
-a build provenance attestation and an SBOM attestation. It reads no secret but
-`GITHUB_TOKEN`, deploys nothing, and publishes nothing for a pull request or a
-branch push.
+`.github/workflows/release.yml` runs on every push to `main` and on every
+pushed `v*` tag. Every run re-runs vet and the race tests, builds the
+`linux/amd64` image, writes the image digest to the job summary, signs the
+digest with cosign (keyless), and attaches a build provenance attestation and
+an SBOM attestation. A push to `main` pushes the moving `main`, `latest`, and
+`sha-<full-sha>` tags; a pushed tag (for example `v0.1.0` on the merge commit)
+pushes `ghcr.io/eshu-hq/eshu-collector-confluence:<tag>` instead, after the
+manifest-version guard passes (that guard runs only on tag events). The
+workflow reads no secret but `GITHUB_TOKEN`, deploys nothing, and publishes
+nothing for a pull request. Use a moving tag only where floating is intended;
+releases stay pinned to digests.
 
 Before the first tag:
 
