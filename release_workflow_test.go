@@ -144,7 +144,7 @@ func tagCheckViolations(doc workflowDoc) []string {
 }
 
 // releaseWorkflowViolations reports how a workflow breaks the release rules:
-// it publishes only for pushed v* tags, every action is pinned by full commit
+// it publishes for pushes to main and pushed v* tags, every action is pinned by full commit
 // SHA, no secret other than GITHUB_TOKEN is read, nothing deploys, the
 // workflow-wide permissions are read-only, the image is linux/amd64 only, the
 // pushed tag is checked against the manifest version, and the signature and
@@ -164,15 +164,16 @@ func releaseWorkflowViolations(raw []byte) []string {
 		violations = append(violations, "triggers must be exactly push, got "+strings.Join(triggers, ","))
 	}
 	if push, ok := doc.On["push"].(map[string]any); ok {
-		if _, branches := push["branches"]; branches {
-			violations = append(violations, "push must not filter on branches")
+		branches, _ := push["branches"].([]any)
+		if len(branches) != 1 || branches[0] != "main" {
+			violations = append(violations, "push must trigger on branches [main]")
 		}
 		tags, _ := push["tags"].([]any)
 		if len(tags) != 1 || tags[0] != "v*" {
 			violations = append(violations, "push must trigger only on tags [v*]")
 		}
 	} else {
-		violations = append(violations, "push trigger must filter on tags")
+		violations = append(violations, "push trigger must filter on branches and tags")
 	}
 	for name, job := range doc.Jobs {
 		for _, step := range job.Steps {
@@ -249,7 +250,8 @@ func TestReleaseWorkflowGuardCatchesViolations(t *testing.T) {
 		"tag pin":          strings.Replace(good, "actions/checkout@"+sha, "actions/checkout@v5", 1),
 		"short sha":        strings.Replace(good, "actions/checkout@"+sha, "actions/checkout@3d3c42e", 1),
 		"pull request":     strings.Replace(good, "on:\n  push:", "on:\n  pull_request:\n  push:", 1),
-		"branch push":      strings.Replace(good, "    tags:\n      - \"v*\"", "    branches: [main]\n    tags:\n      - \"v*\"", 1),
+		"branch widened":   strings.Replace(good, "      - \"main\"", "      - \"main\"\n      - \"dev\"", 1),
+		"branches dropped": strings.Replace(good, "    branches:\n      - \"main\"\n", "", 1),
 		"any tag":          strings.Replace(good, "- \"v*\"", "- \"*\"", 1),
 		"extra secret":     strings.Replace(good, "secrets.GITHUB_TOKEN", "secrets.PUBLISH_KEY", 1),
 		"deploy step":      good + "      - run: kubectl rollout restart deploy/x\n",
