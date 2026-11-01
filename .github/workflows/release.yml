@@ -8,9 +8,10 @@
 #
 # A push to main publishes the moving main, latest, and sha-<full-sha> tags
 # with the same provenance, signature, SBOM, and attestation hardening as a
-# version-tag release. A version tag must match the manifest version; any other
-# v* tag fails before anything is built or pushed. The tag check runs only on
-# tag events.
+# version-tag release. A version tag must point at the protected main head and
+# match the manifest version; a v* tag cut from any other commit, or for any
+# other version, fails before anything is built or pushed. The tag checks run
+# only on tag events.
 name: release
 
 on:
@@ -37,10 +38,26 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    env:
+      TAG_NAME: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # A v* tag on any commit triggers this workflow, so a tag cut from a
+      # feature branch or an unmerged commit must be refused here, before the
+      # publish job (which needs verify) can push anything.
+      - name: Require the tag to point at the protected main head
+        if: github.ref_type == 'tag'
+        env:
+          TAG_COMMIT: ${{ github.sha }}
+        run: |
+          git fetch origin main --quiet
+          main_head="$(git rev-parse origin/main)"
+          if [[ "${TAG_COMMIT}" != "${main_head}" ]]; then
+            echo "tag '${TAG_NAME}' points at ${TAG_COMMIT}, not the protected main head ${main_head}" >&2
+            exit 1
+          fi
       # A grant pins the manifest version, so a tag that disagrees with it would
       # publish an image no activation can install. A pre-release suffix after
       # the first '-' (v0.1.0-rc1) is allowed on top of the manifest version.
