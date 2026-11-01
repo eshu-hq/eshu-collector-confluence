@@ -35,6 +35,9 @@ type workflowStep struct {
 	Uses string            `yaml:"uses"`
 	Run  string            `yaml:"run"`
 	Env  map[string]string `yaml:"env"`
+	// With holds the step's `with:` inputs. The main-head guard rules read
+	// the checkout's persist-credentials; the other rules ignore it.
+	With map[string]any `yaml:"with"`
 	// If holds the step's `if:` condition. The scheduled-findings rules
 	// read it; the release rules ignore it.
 	If string `yaml:"if"`
@@ -46,6 +49,9 @@ type workflowDoc struct {
 	Permissions any            `yaml:"permissions"`
 	Jobs        map[string]struct {
 		Needs any `yaml:"needs"`
+		// Env holds the job's `env:` block. The main-head guard rules read
+		// TAG_NAME; the other rules ignore it.
+		Env map[string]string `yaml:"env"`
 		// If holds the job's `if:` condition. The image-lane test reads
 		// it; the release rules ignore it.
 		If    string         `yaml:"if"`
