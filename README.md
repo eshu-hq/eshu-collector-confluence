@@ -1,279 +1,167 @@
 # eshu-collector-confluence
 
-Pre-release. Holds no producer authority until its reviewed cutover
-(eshu-hq/eshu#8855).
+Status: pre-release. Do not rely on it in production yet.
 
-A read-only Confluence collector for [Eshu](https://github.com/eshu-hq/eshu),
-built as a component extension on the public collector SDK. One claim reads one
-Confluence space, or one root page tree, as one snapshot generation and returns
-source-neutral `documentation_*` facts. It runs through the Eshu
-component-extension host on the `process` runner: the host sends one bounded
-JSON request on stdin and reads one result from stdout. The collector holds no
-Postgres, graph, queue, lease, or workflow handle.
+This collector reads pages from one Confluence space (or one page tree) and hands Eshu a checked snapshot of that documentation.
 
-## What it emits
+Eshu is the core system. A collector is a small helper program: it reads one outside system, turns what it finds into facts (small, typed records), and gives those facts back to Eshu. This collector only reads Confluence. It never writes to Confluence.
 
-| Fact kind | Schema | One fact per |
+## What it collects
+
+One run (a claim, the job Eshu sends) reads one Confluence space or one root page tree as one snapshot. It returns 4 fact kinds that any documentation source can use, all with confidence `observed` (Eshu saw the source directly):
+
+| Fact kind | Schema | One fact describes |
 | --- | --- | --- |
-| `documentation_source` | 1.0.0 | claim (the space or page tree) |
-| `documentation_document` | 1.0.0 | page |
-| `documentation_section` | 1.1.0 | page body |
-| `documentation_link` | 1.0.0 | link in a page body |
+| `documentation_source` | `1.0.0` | the space or page tree (one per claim) |
+| `documentation_document` | `1.0.0` | one page |
+| `documentation_section` | `1.1.0` | one page body |
+| `documentation_link` | `1.0.0` | one link in a page body |
 
-These are Eshu core kinds that the Git documentation path also emits, so core
-consumers are unchanged. A core kind needs a producer grant (see below).
-Payloads are built with the published `sdk/go/factschema` encoders and keep the
-partial ACL posture the in-tree collector reports: Confluence page restrictions
-are not collected, so access stays `partial` and is never upgraded to allowed.
+The same kinds come from Eshu's Git documentation path, so readers of the data do not change. Payloads use the published `sdk/go/factschema` encoders. Access stays cautious: Confluence page restrictions are not collected, so access is reported as `partial` and is never upgraded to allowed. Stored keys match the built-in collector byte for byte; the fact ID does not, because the host builds the final envelope (the wrapper Eshu stores). Recorded fixtures prove the match — see `testdata/README.md`, which also lists every deliberate difference.
 
-Stable keys match the in-tree collector byte for byte. `FactID` does not: the
-host builds the envelope. Parity with the in-tree collector is proven against
-recorded fixtures; see [testdata/README.md](testdata/README.md), which also
-lists every intentional difference.
+Errors, statuses, and logs carry only a class, a status code, and counts. They never carry a token, web address, page ID, title, or page content.
 
-## Result states
+## Result states and failure classes
 
-| State | When | Failure class (bounded) |
+Every claim ends in one state. A failure class is a short, fixed label that says what kind of problem happened, without leaking details.
+
+| State | When | Failure class |
 | --- | --- | --- |
-| `complete` | every page was read and the cursor walk ended | none |
-| `partial` | pages were skipped (unreadable, over `max_page_bytes`, over the result budget) or the walk hit `max_total_pages` | none; `warning_count` counts them |
-| `retryable` | HTTP 429 and 500/502/503/504, a transient transport error, or the claim ran out of time | `rate-limited`, `provider-unavailable`, `transport-error`, `claim-deadline-exceeded` |
-| `terminal` | bad config or credentials, HTTP 401, an unreadable space, an undecodable or oversize response | `invalid-config`, `missing-credentials`, `auth-failed`, `permission-denied`, `invalid-response`, `response-too-large`, `connection-failed`, `untrusted-next-link`, `invalid-claim`, `unsupported_option` |
+| `complete` | every page was read and the page walk finished | none |
+| `partial` | some pages were skipped (unreadable, over the page-size cap, or over the result cap), or the walk hit the page-count cap | none; `warning_count` counts the skips |
+| `retryable` | rate limit (HTTP 429), server error (500/502/503/504), a temporary network error, or the claim ran out of time | `rate-limited`, `provider-unavailable`, `transport-error`, `claim-deadline-exceeded` |
+| `terminal` | bad setup or credentials, login refused (HTTP 401), an unreadable space, or a response that cannot be read or is too large | `invalid-config`, `missing-credentials`, `auth-failed`, `permission-denied`, `invalid-response`, `response-too-large`, `connection-failed`, `untrusted-next-link`, `invalid-claim`, `unsupported_option` |
 
-The host owns the retry budget. A retryable result is released for another
-attempt until the claim reaches the host's attempt limit (10 in
-`collector-component-extension`), then the host dead-letters the work item and
-keeps the class of the last failure. A transport failure that never clears
-therefore ends as `transport-error` after 10 attempts; the collector sets no
-limit of its own.
+`retryable` means "try again later"; `terminal` means "stop until a person fixes something." The host owns the retry budget: it releases a retryable claim for another try until its attempt limit (10) is spent, then sets the work aside (dead-letters it) and keeps the last failure class. The collector sets no retry limit of its own. It never returns `unchanged`, because the host sends no earlier snapshot to compare with; instead the result carries a freshness hint (a digest of every fact returned), and Eshu skips storing a snapshot whose hint matches the current one. Each claim still reads the whole scope.
 
-The collector never emits `unchanged`. The host supplies no previous snapshot
-identity across claims, so the collector cannot prove a snapshot unchanged.
-Instead the result carries a `freshness_hint`, a digest of every emitted fact,
-and the core store skips a snapshot whose hint equals the active generation's.
-Each claim still reads the whole scope, as the in-tree collector does on each
-poll.
+## How data flows
 
-Errors, statuses, and logs carry only a class, a status code, and counts. They
-never carry a token, URL, page id, title, or provider body.
+```mermaid
+flowchart LR
+  A["Confluence space or page tree"] --> B["This collector"] --> C["Eshu host process"] --> D["Eshu core"]
+```
 
-## What operators see
+Text version: Confluence space or page tree → this collector → Eshu host process (checks and stores the result) → Eshu core. The collector never talks to Eshu's database directly and holds no database, graph, queue, or lease handle.
 
-The extension host buffers a collector process's stderr and records only its
-size (`stderr_bytes`) in a launch failure. It is never logged or stored. The
-collector reports its outcome as SDK status rows, one per claim, and each row
-carries everything this collector reports:
+## When to use it, and when not to
 
-| Row | Fields |
-| --- | --- |
-| complete or partial | `fact_count`, `source_latency_ms`, and for a partial snapshot `partial` and `warning_count` (skipped pages, plus one when the walk hit `max_total_pages`) |
-| retryable or terminal | `failure_class`, `retry_after_seconds` (retryable), and `source_latency_ms` (how long the claim ran before it failed) |
+Use it when Eshu needs the current pages, page bodies, and links from one Confluence space or page tree, refreshed on a schedule Eshu controls. Do not use it to edit Confluence, to read several spaces in one setup (use one setup per scope), or to judge who may see a page — restrictions are not collected, so access answers stay partial by design.
 
-On eshu `main` since eshu-hq/eshu#9008 (a release carries it once one is cut
-after that change), the worker sets a status recorder: it records every claim
-result as six `eshu_dp_component_extension_*` metrics and one
-`component extension result` log line, and it honors `retry_after_seconds`
-(capped at one hour, never below the poll interval; the
-`eshu_dp_component_extension_retry_after_seconds` gauge holds the request, not
-the applied delay). Before a release carries it, only the failure class
-reaches the work item.
+## How Eshu runs it
 
-`failure_class` is a bounded token from the table above. `unsupported_option`
-means the activation set `attestation.allow_empty_successor: true`, the only
-option the collector refuses (see Known gaps). `invalid-config` and
-`missing-credentials` are rejected before any provider request.
+Eshu's component host starts this program for one claim at a time: it sends one bounded JSON request on standard input (stdin) and reads one result from standard output (stdout). The host builds the final envelope, checks the result, and owns claims and commits.
 
-The binary also writes a `collector health` JSON line and, for a failure, a
-`collector detail` line to stderr (request counts by operation and outcome, the
-exact config problem). They are a debug aid for running the binary by hand; the
-host does not surface them. No metrics or traces are emitted (see Known gaps).
+```bash
+collector --sdk-stdio   # serve one claim from stdin (required flag)
+```
 
-## Configuration
-
-Copy [config.example.yaml](config.example.yaml). It is the component activation
-file: `host` names the claim identity, `process` launches the binary, and
-`config` is this collector's own configuration. Unknown keys are rejected so a
-typo cannot silently drop a bound.
-
-- Run one activation per scope. Set `host.scope.id` to the id the in-tree
-  collector used (`doc-source:confluence:<lower-case host>:<space id>`) so
-  documentation read truth continues across the cutover.
-- Credentials are read from the worker's environment. The activation names the
-  variables (`email_env` and `api_token_env`, or `bearer_token_env`); the
-  defaults are `ESHU_CONFLUENCE_EMAIL`, `ESHU_CONFLUENCE_API_TOKEN`, and
-  `ESHU_CONFLUENCE_BEARER_TOKEN`. A bearer token wins over basic auth.
-- `attestation.allow_empty_successor` maps the in-tree
-  `ESHU_CONFLUENCE_ALLOW_EMPTY_SUCCESSOR` option. Absent and `false` mean no
-  attestation. `true` is **refused**: the claim ends terminal with failure class
-  `unsupported_option`, before any provider request, because the published
-  collector SDK cannot carry the attestation (see Known gaps).
-- The claim time budget is `limits.claim_timeout_seconds` (default 300) or the
-  time the host gives the claim, whichever is smaller. The host sets the claim
-  deadline to the **initial lease expiry** and kills the process there; the
-  default lease TTL is 60 seconds (worker env
-  `ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL`) and heartbeats do not extend the
-  deadline. So a `claim_timeout_seconds` above the lease TTL has no effect. The
-  collector stops starting work a margin before the deadline (5% of the time
-  left, at most 2 seconds) and returns a `retryable` result with failure class
-  `claim-deadline-exceeded` instead of being killed mid-write. Set the worker
-  lease TTL to at least 5 minutes in the reference deployment for any
-  activation whose space takes longer than about a minute to read; see the
-  acceptance notes.
-- The host reads at most `process.stdout_limit_bytes` of stdout per claim
-  (4 MiB by default). Raise it for a large space and keep
-  `limits.max_result_bytes` below it; pages that do not fit are left out whole
-  and the snapshot is `partial`.
-
-## Producer grants
-
-The component declares core-owned kinds, so the core must grant each kind
-before the component installs. Grants bind to the manifest's collector kind
-(`documentation`), not to one source scope, so one grant set covers every
-activation. [grant.example.json](grant.example.json) lists the four grants;
-record each with `eshu component grant dev.eshu.collector.confluence --version
-0.1.0 --kind <kind> --schema-version <v> --scope documentation --expires-in
-<duration>`.
-
-## Image and seeding
-
-`Dockerfile` builds one static, pure-Go binary onto a shell-less distroless
-base (`ghcr.io/eshu-hq/eshu-collector-confluence`, runs as 65532). The image is
-also the seed source for the component home:
+The published image is `ghcr.io/eshu-hq/eshu-collector-confluence` (always `linux/amd64`, runs as user 65532, no shell). The binary can install itself into a component folder, which is how a startup (init) container sets it up:
 
 ```bash
 collector seed --dest /component [--image-ref ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest>]
 ```
 
-`seed` writes `DEST/collector` (mode 0755) and `DEST/manifest.yaml`. It leaves a
-file alone when its bytes and mode already match, so an init container can run
-it on every start, and it replaces a changed binary atomically. The manifest in
-the repository keeps a placeholder artifact digest, because an image cannot name
-its own digest. Pass the digest-pinned reference the pod runs (`--image-ref`, or
-`COLLECTOR_IMAGE_REF`) and the seeded manifest names it; `seed` stamps only that
-reference into `artifacts[].image` and refuses anything that is not a
-`name[:port]/path@sha256:<64 hex>` reference (lower-case, no tag, no quote,
-backslash, `$`, or whitespace; one trailing newline is ignored). A refused
-reference exits non-zero and writes nothing. The release workflow
-prints the digest reference to its job summary (see Releasing). The image is always `linux/amd64` (the manifest's platform),
-whatever the builder is. Installing the seeded manifest still
-needs the four grants and the `eshu-hq` publisher on the allowlist; `eshu
-component enable` is not idempotent, so an init container must tolerate "already
-enabled".
+This writes `/component/collector` (mode 0755) and `/component/manifest.yaml`. It leaves a file alone when the bytes and mode already match, so it is safe to run on every start, and it replaces a changed binary in one step. `--image-ref` (or `COLLECTOR_IMAGE_REF`) stamps the exact deployed image reference into the manifest, because an image cannot contain its own digest; the repository manifest keeps a placeholder digest. Anything that is not a plain `name@sha256:<64 hex>` reference is refused before any file is written. Installing still needs the 4 grants below and the `eshu-hq` publisher allowed, and `eshu component enable` is not repeat-safe, so setup must tolerate "already enabled."
 
-## Cutover acceptance notes
+## Configuration
 
-Check these on the reference activation before the in-tree collector is removed:
+Copy `config.example.yaml` and enable one scope per setup, for example: `eshu component enable dev.eshu.collector.confluence --instance confluence-eng --claims --config config.example.yaml`. The file has three parts: `host` names the job identity Eshu plans, `process` says how Eshu starts the binary, and `config` holds this collector's own settings. Unknown keys are rejected, so a typo cannot silently drop a limit. Never commit a real host, token, or user; the example uses reserved `.invalid` names on purpose.
 
-- **Space read time vs lease TTL.** Measure how long the largest space takes
-  to read: the status row's `source_latency_ms`, which the host records in
-  `eshu_dp_component_extension_source_latency_seconds` on eshu `main` since
-  eshu-hq/eshu#9008, or by timing a run of the binary by hand against the
-  space. It must fit inside the worker
-  lease TTL minus the deadline margin. A read that does not fit retries with
-  `claim-deadline-exceeded` until the host's attempt budget is spent, then
-  dead-letters. Raise `ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL` on the worker
-  to at least 5 minutes in the reference deployment before activating.
-- **Live Confluence Cloud check.** Page URLs differ from the in-tree rule on
-  purpose. This collector joins `_links.base` and `_links.webui`, so a Cloud
-  page keeps its `/wiki` context path; the in-tree collector resolved the path
-  against the base and dropped it. The join follows the shape Atlassian
-  documents, not a live read (see [testdata/README.md](testdata/README.md)).
-  Check a few stored `canonical_uri` values against a live tenant before
-  relying on them; eshu-hq/eshu#8913 stays open for that read. The change moves `canonical_uri` and the freshness hint of every Cloud
-  page, so the first claim after cutover stores a fresh generation.
-- **Scope id.** `host.scope.id` must equal the in-tree id so read truth
-  continues.
+| `config` key | Meaning |
+| --- | --- |
+| `source.base_url` | Confluence web address, for example `https://confluence.example.invalid/wiki` |
+| `source.space_id` or `source.root_page_id` | Read one whole space, or one page tree from a root page. Exactly one is required |
+| `source.space_key` | Optional label used in page-tree mode |
+| `source.page_limit` | Pages per request, 1–250 |
+| `source.max_total_pages` | Most pages in one walk; hitting the cap is reported as `partial` |
+| `credentials.*_env` | Names of environment variables that hold the login (see below) |
+| `attestation.allow_empty_successor` | Leave `false`; `true` is refused for now (see Known limits) |
+| `limits.*` | Time and size caps for one claim (see below) |
 
-## Releasing
+Set `host.scope.id` to the ID the built-in collector used (`doc-source:confluence:<lower-case host>:<space id>`; in page-tree mode it carries the space ID of the first page read), so stored documentation continues under the same identity after a switch.
 
-`.github/workflows/release.yml` runs on every push to `main` and on every
-pushed `v*` tag. Every run re-runs vet and the race tests, builds the
-`linux/amd64` image, writes the image digest to the job summary, signs the
-digest with cosign (keyless), and attaches a build provenance attestation and
-an SBOM attestation. A push to `main` pushes the moving `main`, `latest`, and
-`sha-<full-sha>` tags; a pushed tag (for example `v0.1.0` on the `main` head)
-pushes `ghcr.io/eshu-hq/eshu-collector-confluence:<tag>` instead, after the
-main-head and manifest-version guards pass (those guards run only on tag
-events). A tag on any commit other than the `main` head fails the verify job
-before anything is built or pushed. The
-workflow reads no secret but `GITHUB_TOKEN`, deploys nothing, and publishes
-nothing for a pull request. Use a moving tag only where floating is intended;
-releases stay pinned to digests.
+## Credentials
 
-Before the first tag:
+Secrets never go in the config file. Under `config.credentials`, name the environment variables the worker already has: `email_env` plus `api_token_env` for a Cloud API token, or `bearer_token_env` on its own. Defaults are `ESHU_CONFLUENCE_EMAIL`, `ESHU_CONFLUENCE_API_TOKEN`, and `ESHU_CONFLUENCE_BEARER_TOKEN`. If a bearer token is set, it wins over email-plus-token login. Secret values never appear in facts, logs, or status messages. Bad setup and missing credentials (`invalid-config`, `missing-credentials`) are refused before any request to Confluence.
 
-- **Restrict who can create `v*` tags.** The workflow refuses a `v*` tag that
-  is not the `main` head, and the verify job fails before anything is
-  published. Also add a repository tag ruleset that limits creation of `v*`
-  tags to maintainers.
-- **Bump `metadata.version` in `manifest.yaml` before tagging.** The verify job
-  fails unless the tag is `v` plus that version, optionally followed by a
-  pre-release suffix after the first `-` (`v0.1.0-rc1`). A grant pins the
-  manifest version, so the two must agree.
+## Time and size limits
 
-Then:
+The time bound for one claim is the smaller of `limits.claim_timeout_seconds` (default 300) and the time the host allows. The host sets the deadline to the first lease expiry and stops the process there; the default lease is 60 seconds (`ESHU_COMPONENT_COLLECTOR_CLAIM_LEASE_TTL` on the worker) and heartbeat messages do not extend it — so a timeout above the lease has no effect. The collector stops starting work shortly before the deadline (5% of the time left, at most 2 seconds) and returns `retryable` with `claim-deadline-exceeded` instead of being stopped mid-write. For any space that takes over a minute to read, set the worker lease to at least 5 minutes.
 
-1. The first publish creates a private package. Make
-   `ghcr.io/eshu-hq/eshu-collector-confluence` **public** in the package
-   settings once; a worker cannot pull a private package without credentials.
-2. Confirm an anonymous pull works after the visibility change. The workflow
-   verifies with its own token, so it passes while the package is private:
+Other caps under `config.limits`: `fetch_concurrency` (page reads at once, 1–16), `max_page_bytes` (a larger page is skipped and the snapshot is `partial`), `max_result_bytes` (whole result), and `max_response_bytes` (one response). The host reads at most `process.stdout_limit_bytes` per claim (4 MiB by default): raise it for a large space and keep `max_result_bytes` below it. Pages that do not fit are left out whole, never cut in half.
 
-   ```bash
-   docker manifest inspect ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest>
-   ```
+## What operators see
 
-   Run it from a shell that is not logged in to GHCR (`docker logout ghcr.io`
-   first if needed). It must print the manifest, not an authorization error.
-3. Copy the digest reference from the job summary
-   (`ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest>`) into the
-   activation's `seed.image`, and seed with `--image-ref` or
-   `COLLECTOR_IMAGE_REF`.
-4. Verify before use (the workflow ref is the tag that was pushed):
+The host keeps the collector's standard-error (stderr) text only as a byte count, so the useful signal is the status row in each result:
 
-```bash
-cosign verify ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest> \
-  --certificate-identity \
-  https://github.com/eshu-hq/eshu-collector-confluence/.github/workflows/release.yml@refs/tags/v0.1.0 \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
-gh attestation verify oci://ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest> \
-  -R eshu-hq/eshu-collector-confluence
-```
+| Result | Fields operators get |
+| --- | --- |
+| `complete` or `partial` | `fact_count`, `source_latency_ms`, and for partial runs `partial` plus `warning_count` |
+| `retryable` or `terminal` | `failure_class`, `retry_after_seconds` (retryable only), and `source_latency_ms` |
 
-## Known gaps
+On current Eshu `main`, the worker also records each result as `eshu_dp_component_extension_*` metrics and one `component extension result` log line, and it honors `retry_after_seconds` (capped at one hour, never below the poll interval). Until a release carries that recording, only the failure class reaches the work item. The binary also writes `collector health` and `collector detail` debug lines to stderr for local runs (request counts and the exact config problem); the host does not surface them. This collector emits no metrics or traces of its own: the manifest declares the prefix `eshu_dp_confluence_collector_`, but nothing emits under it.
 
-- `eshu component inspect` and `verify` read the producer grants in the
-  component home on eshu `main` since eshu-hq/eshu#8952 (a release carries it
-  once one is cut after that change) and judge this manifest once the four
-  grants are recorded. `eshu component conform` loads the manifest with those
-  grants and then still fails: the published v0.2.0 SDK harness has no grant
-  concept and refuses non-namespaced kinds (this manifest's four kinds have no
-  dot) even when the host's grants admit them (eshu-hq/eshu#8851).
-  `TestPublicHarnessCannotYetJudgeCoreKindManifests` pins this and
-  `TestFixturesPassTheHostChecks` runs the checks the host runs at emission.
-- SDK v0.2.0 has no `Generation.TrustedDeletion`; it landed after the tag. The
-  collector does not hand-marshal that unpublished wire field, so a scope that
-  needs an empty or sharply smaller snapshot to replace the current one cannot
-  be served yet: with the option off, the core store's successor guard refuses
-  such a snapshot, as it does for any collector. Removal condition: a collector
-  SDK release that carries `TrustedDeletion`, then set it from the option and
-  delete the refusal in `parseAttestation`.
-- No OTEL metrics or traces. Out-of-process collectors emit no metrics or
-  traces by design (arbiter ruling, 2026-10-23): the SDK status record is the
-  contract and the host records it on eshu `main` since eshu-hq/eshu#9008
-  (a release carries it once one is cut after that change). The manifest
-  declares the metric prefix `eshu_dp_confluence_collector_`, but nothing in
-  this process emits it, and the in-tree Confluence metrics have no equivalent.
-- `internal/stableid` and `internal/httpx` are copies of in-tree helpers. Replace
-  them with the published eshu-sdk helpers when eshu-hq/eshu#8851 lands.
+Before switching a live space to this collector, check two things. First, measure the largest space's read time (the status row's `source_latency_ms`, or time a local run) and make sure it fits inside the worker lease. Second, check a few stored page addresses (`canonical_uri`) against the live site: this collector joins the base address and page path so Cloud pages keep their `/wiki` prefix, which the built-in collector dropped, so the first claim after a switch stores a fresh snapshot. The live-site check is still open work; do not rely on those addresses until you have compared them.
 
-## Develop
+## Permission to publish facts
+
+All 4 fact kinds belong to Eshu core, so core must grant each kind (written permission to publish it) before the component installs. Grants are tied to the collector kind (`documentation`), not to one space, so one grant set covers every setup. `grant.example.json` lists the 4 grants; record each with `eshu component grant dev.eshu.collector.confluence --version 0.1.0 --kind <kind> --schema-version <v> --scope documentation --expires-in <duration>`.
+
+## Known limits
+
+- An empty or much smaller snapshot cannot yet replace the current one on request. Setting `attestation.allow_empty_successor: true` ends the claim as `terminal` with `unsupported_option`, before any Confluence request, because the published SDK cannot carry that promise yet. With the setting off, Eshu's safety check refuses such a snapshot, as it does for any collector. This lifts when an SDK release carries the needed field.
+- `eshu component inspect` and `verify` judge this manifest once the 4 grants are recorded. `eshu component conform` still refuses these core kinds in the published SDK harness, even with grants; tests in this repo (`TestFixturesPassTheHostChecks`) run the same checks the host runs when facts are emitted.
+- No metrics or traces are emitted by this process (see above). Two helper folders (`internal/stableid`, `internal/httpx`) copy built-in helpers a standalone repo cannot import yet; they will be replaced when the shared SDK helpers are published.
+
+## Eshu dependencies
+
+Exact versions from `go.mod`. Do not substitute another SDK line.
+
+| Module | Version |
+| --- | --- |
+| Go | `1.26.10` |
+| `github.com/eshu-hq/eshu/sdk/go/collector` | `v0.2.0` |
+| `github.com/eshu-hq/eshu/sdk/go/factschema` | `v0.2.0` |
+| `golang.org/x/net` | `v0.62.0` |
+| `gopkg.in/yaml.v3` | `v3.0.1` |
+
+The component ID is `dev.eshu.collector.confluence`, version `0.1.0`. It declares support for Eshu core `>=0.0.5 <0.2.0`, speaks `collector-sdk/v1alpha1` over the process adapter, and uses collector kind `documentation` (see `manifest.yaml`).
+
+## What it never does
+
+- It never writes to Confluence, and it never stores anything itself — the host validates and commits.
+- It never imports Eshu core internals or another collector; `boundary_test.go` fails the build if that changes. It uses only the published SDK modules, the standard library, `golang.org/x/net/html`, and YAML parsing.
+- It never puts tokens, page titles, page IDs, or page content into errors, logs, or status messages, and it never upgrades unknown page access to allowed.
+
+## Build, test, and release
 
 ```bash
 go build ./... && go vet ./...
 go test -race -count=1 ./...
+make ci   # lint + test + race; the full local check CI runs
 ```
 
-Tests use `httptest` and recorded fixtures only. No test reaches a real
-Confluence site. `testdata/conformance/*.json` are generated; refresh them with
-`UPDATE_CONFORMANCE_FIXTURES=1 go test -run TestConformanceFixturesAreCurrent .`.
+Tests use local test servers and recorded fixtures only; no test reaches a real Confluence site. Saved check files in `testdata/conformance/*.json` are generated; refresh them with `UPDATE_CONFORMANCE_FIXTURES=1 go test -run TestConformanceFixturesAreCurrent .`.
+
+Releases run from `.github/workflows/release.yml` on every push to `main` and on `v*` tags. Each run re-runs vet and race tests, builds the `linux/amd64` image, writes the digest to the job summary, signs it with cosign (keyless), and attaches provenance and SBOM attestations. A `main` push publishes the moving `main`, `latest`, and `sha-<full-sha>` tags; a version tag publishes that tag instead, and only if the tag is on the `main` head and matches `metadata.version` in `manifest.yaml` (an optional pre-release suffix such as `v0.1.0-rc1` is allowed). Nothing is published for a pull request, and the workflow deploys nothing. Before the first tag, also limit `v*` tag creation to maintainers.
+
+After a release: make the GHCR package public once (GitHub creates it as private), confirm an anonymous pull works (`docker manifest inspect ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest>` from a shell that is not logged in), copy the digest reference from the job summary into the deployment's `seed.image`, and verify before use:
+
+```bash
+cosign verify ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest> --certificate-identity https://github.com/eshu-hq/eshu-collector-confluence/.github/workflows/release.yml@refs/tags/v0.1.0 --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify oci://ghcr.io/eshu-hq/eshu-collector-confluence@sha256:<digest> -R eshu-hq/eshu-collector-confluence
+```
+
+## Docs and related projects
+
+- `config.example.yaml` — full setup example; `manifest.yaml` — identity, fact list, and core range; `grant.example.json` — the 4 grant requests; `testdata/README.md` — fixture and parity notes.
+- [Eshu core](https://github.com/eshu-hq/eshu) — the host that runs this collector.
+- [eshu-sdk](https://github.com/eshu-hq/eshu-sdk) — shared SDK modules. [eshu-deploy](https://github.com/eshu-hq/eshu-deploy) — deployment examples and reference setups.
+
+## Contributing
+
+See `CONTRIBUTING.md`. In short: `make ci` is the full local check (lint, test, and race with a 90% coverage floor); run it before pushing.
+
+## License
+
+MIT. See `LICENSE`.
