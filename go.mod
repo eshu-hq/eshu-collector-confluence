@@ -1,6 +1,6 @@
 module github.com/eshu-hq/eshu-collector-confluence
 
-go 1.26.10
+go 1.26.11
 
 require (
 	github.com/eshu-hq/eshu/sdk/go/collector v0.2.0
